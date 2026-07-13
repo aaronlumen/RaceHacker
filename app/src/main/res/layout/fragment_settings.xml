@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SETTINGS"
+            android:gravity="center"
+            android:letterSpacing="0.15"
+            style="@style/RacingTextTitle" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/racing_red" />
+
+        <!-- Vehicle Configuration -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="VEHICLE CONFIGURATION"
+            android:letterSpacing="0.1"
+            style="@style/RacingTextSubtitle" />
+
+        <Button
+            android:id="@+id/auto_detect_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="4dp"
+            android:text="AUTO-DETECT VEHICLE (VIN)"
+            style="@style/RacingButtonSecondary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/vehicle_type"
+            style="@style/RacingTextBody" />
+
+        <Spinner
+            android:id="@+id/vehicle_type_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/card_background"
+            android:padding="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/cable_type"
+            style="@style/RacingTextBody" />
+
+        <Spinner
+            android:id="@+id/cable_type_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/card_background"
+            android:padding="12dp" />
+
+        <!-- Connection Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="BLUETOOTH CONNECTION"
+            android:letterSpacing="0.1"
+            style="@style/RacingTextSubtitle" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:background="@color/racing_light_gray" />
+
+        <TextView
+            android:id="@+id/connection_status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="@string/connection_status"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@color/card_background"
+            style="@style/RacingTextBody" />
+
+        <Button
+            android:id="@+id/scan_devices_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="@string/scan_devices"
+            style="@style/RacingButton" />
+
+        <!-- Device search -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/bluetooth_devices"
+            style="@style/RacingTextBody" />
+
+        <EditText
+            android:id="@+id/device_search_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"
+            android:background="@color/surface"
+            android:padding="10dp"
+            android:hint="Search devices..."
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_disabled"
+            android:singleLine="true"
+            android:inputType="text"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="8dp" />
+
+        <ListView
+            android:id="@+id/bluetooth_devices_list"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="4dp"
+            android:background="@color/card_background"
+            android:divider="@color/racing_light_gray"
+            android:dividerHeight="1dp" />
+
+        <Button
+            android:id="@+id/connect_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/connect_device"
+            style="@style/RacingButton" />
+
+    </LinearLayout>
+
+</ScrollView>

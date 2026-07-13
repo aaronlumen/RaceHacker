@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Tuning/wrench icon with sliders -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M3,5H7V7H3V5ZM3,11H7V13H3V11ZM3,17H7V19H3V17Z" />
+
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M9,5H21V7H9V5ZM9,11H21V13H9V11ZM9,17H21V19H9V17Z" />
+
+    <!-- Slider knobs -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M13,4H15V8H13V4Z" />
+
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M17,10H19V14H17V10Z" />
+
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M11,16H13V20H11V16Z" />
+</vector>

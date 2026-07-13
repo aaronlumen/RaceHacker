@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core racing blacks -->
+    <color name="racing_black">#000000</color>
+    <color name="racing_dark_gray">#0D0D0D</color>
+    <color name="racing_gray">#1A1A1A</color>
+    <color name="racing_light_gray">#2E2E2E</color>
+
+    <!-- Racing accents -->
+    <color name="racing_red">#CC0000</color>
+    <color name="racing_red_bright">#FF2222</color>
+    <color name="racing_orange">#FF6600</color>
+    <color name="racing_yellow">#FFCC00</color>
+    <color name="racing_green">#00E676</color>
+    <color name="racing_blue">#0099FF</color>
+    <color name="racing_purple">#9933FF</color>
+    <color name="racing_silver">#C0C0C0</color>
+
+    <!-- Status colours -->
+    <color name="status_normal">#00E676</color>
+    <color name="status_warning">#FF8C00</color>
+    <color name="status_critical">#FF2222</color>
+
+    <!-- Material theme -->
+    <color name="colorPrimary">#0D0D0D</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#CC0000</color>
+
+    <!-- Text -->
+    <color name="text_primary">#F0F0F0</color>
+    <color name="text_secondary">#AAAAAA</color>
+    <color name="text_disabled">#444444</color>
+
+    <!-- Backgrounds -->
+    <color name="background">#0A0A0A</color>
+    <color name="surface">#141414</color>
+    <color name="card_background">#1C1C1C</color>
+    <color name="gauge_card_bg">#161616</color>
+    <color name="header_bg">#111111</color>
+
+    <!-- Gauge value colours -->
+    <color name="gauge_normal">#00E676</color>
+    <color name="gauge_warning">#FF8C00</color>
+    <color name="gauge_critical">#FF2222</color>
+    <color name="gauge_nodata">#444444</color>
+    <color name="gauge_background">#161616</color>
+
+    <!-- Misc -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="divider">#2A2A2A</color>
+</resources>

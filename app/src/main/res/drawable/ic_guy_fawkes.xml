@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stylized Guy Fawkes / Anonymous mask, green line-art to match the Workshop theme -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="30dp"
+    android:height="30dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Mask / face outline (faint green fill + bright outline) -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="1.6"
+        android:fillColor="#00FF41"
+        android:fillAlpha="0.12"
+        android:pathData="M24,3 C33,3 40,8 40,16 C40,23 36,28 32,34 C29,39 26,44 24,46 C22,44 19,39 16,34 C12,28 8,23 8,16 C8,8 15,3 24,3 Z" />
+
+    <!-- Eyebrows -->
+    <path android:strokeColor="#00FF41" android:strokeWidth="2" android:strokeLineCap="round"
+        android:pathData="M11,15 L21,17" />
+    <path android:strokeColor="#00FF41" android:strokeWidth="2" android:strokeLineCap="round"
+        android:pathData="M37,15 L27,17" />
+
+    <!-- Eyes -->
+    <path android:fillColor="#00FF41"
+        android:pathData="M13,19 Q17,15.5 21,19 Q17,22 13,19 Z" />
+    <path android:fillColor="#00FF41"
+        android:pathData="M27,19 Q31,15.5 35,19 Q31,22 27,19 Z" />
+
+    <!-- Handlebar mustache -->
+    <path android:fillColor="#00FF41"
+        android:pathData="M24,29 C21,29 19,31 15,30 C17,32.5 21,32.5 24,30.5 C27,32.5 31,32.5 33,30 C29,31 27,29 24,29 Z" />
+
+    <!-- Smile -->
+    <path android:strokeColor="#00FF41" android:strokeWidth="1.6" android:strokeLineCap="round"
+        android:pathData="M18,34 Q24,38 30,34" />
+
+    <!-- Pointed goatee -->
+    <path android:fillColor="#00FF41"
+        android:pathData="M22,39 L24,45 L26,39 Q24,40.5 22,39 Z" />
+</vector>

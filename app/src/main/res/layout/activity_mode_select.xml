@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Mode Selection Screen — choose your path:
+    🏁 PRO RACING  — live gauges, tuning, ECU flash
+    ⚡ WORKSHOP    — CAN monitor, PID browser, CarHackerKit security tools
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/racing_black">
+
+    <!-- ── Top watermark ──────────────────────────────── -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="S U R I N A"
+        android:textColor="#444444"
+        android:textSize="10sp"
+        android:textStyle="italic"
+        android:fontFamily="sans-serif-light"
+        android:letterSpacing="0.3"
+        android:gravity="center"
+        android:paddingTop="12dp"
+        android:paddingBottom="4dp" />
+
+    <!-- Red separator -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/racing_red" />
+
+    <!-- ── RACING panel (top half) ────────────────────── -->
+    <FrameLayout
+        android:id="@+id/panel_racing"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <!-- Checkered flag background -->
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/checkered_flag_bg"
+            android:scaleType="centerCrop"
+            android:alpha="0.18" />
+
+        <!-- Dark gradient overlay -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#CC000000" />
+
+        <!-- Content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="24dp">
+
+            <!-- Big icon -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏁"
+                android:textSize="56sp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PRO RACING"
+                android:textColor="#FFFFFF"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.14" />
+
+            <View
+                android:layout_width="48dp"
+                android:layout_height="3dp"
+                android:background="@color/racing_red"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Live Gauges  ·  ECU Flash  ·  Stage Tuning"
+                android:textColor="#AAAAAA"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.08"
+                android:gravity="center"
+                android:layout_marginBottom="20dp" />
+
+            <Button
+                android:layout_width="200dp"
+                android:layout_height="48dp"
+                android:text="ENTER RACING"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.1"
+                android:backgroundTint="@color/racing_red"
+                android:clickable="false"
+                android:focusable="false" />
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Red divider between panels -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/racing_red" />
+
+    <!-- ── WORKSHOP panel (bottom half) ──────────────── -->
+    <FrameLayout
+        android:id="@+id/panel_workshop"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <!-- Carbon fiber background -->
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/carbon_fiber_bg"
+            android:scaleType="centerCrop"
+            android:alpha="0.22" />
+
+        <!-- Dark overlay -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#CC050505" />
+
+        <!-- Content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="24dp">
+
+            <!-- Icon -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚡"
+                android:textSize="56sp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WORKSHOP"
+                android:textColor="#00E676"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.1" />
+
+            <View
+                android:layout_width="48dp"
+                android:layout_height="3dp"
+                android:background="#00E676"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CAN Monitor  ·  PID Browser  ·  Security Tools"
+                android:textColor="#888888"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.08"
+                android:gravity="center"
+                android:layout_marginBottom="20dp" />
+
+            <Button
+                android:layout_width="200dp"
+                android:layout_height="48dp"
+                android:text="ENTER WORKSHOP"
+                android:textColor="@color/racing_black"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.1"
+                android:backgroundTint="#00E676"
+                android:clickable="false"
+                android:focusable="false" />
+
+        </LinearLayout>
+    </FrameLayout>
+
+</LinearLayout>

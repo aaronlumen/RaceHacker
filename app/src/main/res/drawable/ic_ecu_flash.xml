@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Microchip/ECU icon -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M6,4H18V20H6V4ZM8,6V18H16V6H8Z" />
+
+    <!-- Chip pins (left side) -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M2,8H6V9H2V8ZM2,11H6V12H2V11ZM2,14H6V15H2V14Z" />
+
+    <!-- Chip pins (right side) -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M18,8H22V9H18V8ZM18,11H22V12H18V11ZM18,14H22V15H18V14Z" />
+
+    <!-- Chip pins (top) -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M10,2H11V4H10V2ZM13,2H14V4H13V2Z" />
+
+    <!-- Chip pins (bottom) -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M10,20H11V22H10V20ZM13,20H14V22H13V20Z" />
+
+    <!-- Flash symbol inside chip -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M14,8L10,13H12V16L16,11H14V8Z" />
+</vector>

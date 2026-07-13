@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Workshop / CarHackerKit shell
+  Dark hacker-garage aesthetic: deep black bg, green mono accents, amber alerts
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#050505"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- ── Header bar ─────────────────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#0D0D0D">
+
+            <TextView
+                android:id="@+id/btn_workshop_back"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="&lt;"
+                android:textColor="#00FF41"
+                android:textSize="22sp"
+                android:gravity="center"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="WORKSHOP"
+                android:textColor="#00FF41"
+                android:textSize="18sp"
+                android:letterSpacing="0.25"
+                android:fontFamily="monospace"
+                android:gravity="center" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SURINA"
+                android:textColor="#555555"
+                android:textSize="11sp"
+                android:textStyle="italic"
+                android:paddingEnd="12dp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <!-- ── Connection status bar ─────────────────────────────────── -->
+        <TextView
+            android:id="@+id/tv_connection_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#0A1A0A"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:text="DISCONNECTED"
+            android:textColor="#FFAA00"
+            android:textSize="12sp"
+            android:fontFamily="monospace" />
+
+        <!-- ── Connection type tiles ─────────────────────────────────── -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="// SELECT CONNECTION"
+            android:textColor="#444444"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="6dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="4">
+
+            <LinearLayout
+                android:id="@+id/tile_connect_bt"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:background="#0D1A0D"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="BT" android:textColor="#00FF41" android:textSize="16sp"
+                    android:fontFamily="monospace" android:textStyle="bold"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Bluetooth" android:textColor="#555555" android:textSize="9sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tile_connect_usb"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:background="#0D1A0D"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="USB" android:textColor="#00FF41" android:textSize="16sp"
+                    android:fontFamily="monospace" android:textStyle="bold"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Serial" android:textColor="#555555" android:textSize="9sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tile_connect_wifi"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:background="#0D1A0D"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="WiFi" android:textColor="#00FF41" android:textSize="16sp"
+                    android:fontFamily="monospace" android:textStyle="bold"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="TCP" android:textColor="#555555" android:textSize="9sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tile_connect_sim"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:background="#1A1A0D"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="SIM" android:textColor="#FFAA00" android:textSize="16sp"
+                    android:fontFamily="monospace" android:textStyle="bold"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Simulator" android:textColor="#555555" android:textSize="9sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ── ECU Info panel ────────────────────────────────────────── -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="// ECU INFO"
+            android:textColor="#444444"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="6dp" />
+
+        <TextView
+            android:id="@+id/tv_ecu_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#0A0A0A"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp"
+            android:text="ECU: --  |  VIN: --  |  CAL: --  |  PROTOCOL: --"
+            android:textColor="#00FF41"
+            android:textSize="11sp"
+            android:fontFamily="monospace" />
+
+        <!-- ── CAN Bus Monitor ───────────────────────────────────────── -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="// CAN BUS MONITOR"
+            android:textColor="#444444"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="6dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_can_log"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="#080808"
+            android:clipToPadding="false"
+            android:padding="8dp" />
+
+        <!-- ── PID Browser ───────────────────────────────────────────── -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="// PID BROWSER  (SAE J1979 Mode 01/09)"
+            android:textColor="#444444"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="6dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_pid_browser"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:background="#080808"
+            android:clipToPadding="false"
+            android:padding="8dp" />
+
+        <!-- ── CarHackerKit launcher ─────────────────────────────────── -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="// EXTERNAL TOOLKIT"
+            android:textColor="#444444"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="6dp" />
+
+        <LinearLayout
+            android:id="@+id/btn_open_carhackerkit"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="#0D1A0D"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_guy_fawkes"
+                android:contentDescription="CarHackerKit" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OPEN CARHACKERKIT  ▸"
+                android:textColor="#00FF41"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <!-- ── Bottom spacer ────────────────────────────────────────── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="32dp" />
+
+    </LinearLayout>
+</ScrollView>

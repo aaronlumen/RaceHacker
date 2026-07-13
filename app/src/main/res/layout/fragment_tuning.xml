@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TUNING"
+            android:gravity="center"
+            style="@style/RacingTextTitle" />
+
+        <!-- Presets -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="TUNING PRESETS"
+            style="@style/RacingTextSubtitle" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/conservative_preset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:text="@string/conservative_tune"
+                android:textSize="10sp"
+                style="@style/RacingButtonSecondary" />
+
+            <Button
+                android:id="@+id/street_preset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:text="@string/street_tune"
+                android:textSize="10sp"
+                style="@style/RacingButtonSecondary" />
+
+            <Button
+                android:id="@+id/aggressive_preset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:text="@string/aggressive_tune"
+                android:textSize="10sp"
+                style="@style/RacingButtonSecondary" />
+
+            <Button
+                android:id="@+id/race_preset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:text="@string/race_tune"
+                android:textSize="10sp"
+                style="@style/RacingButtonSecondary" />
+        </LinearLayout>
+
+        <!-- AFR -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/afr_label"
+            style="@style/RacingTextBody" />
+
+        <TextView
+            android:id="@+id/afr_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="12.5:1"
+            android:textColor="@color/racing_red"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/afr_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Timing -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/timing_label"
+            style="@style/RacingTextBody" />
+
+        <TextView
+            android:id="@+id/timing_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="25.0°"
+            android:textColor="@color/racing_red"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/timing_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Boost -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/boost_label"
+            style="@style/RacingTextBody" />
+
+        <TextView
+            android:id="@+id/boost_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="15.0 PSI"
+            android:textColor="@color/racing_red"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/boost_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Rev Limit -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/rev_limit_label"
+            style="@style/RacingTextBody" />
+
+        <TextView
+            android:id="@+id/rev_limit_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="7200 RPM"
+            android:textColor="@color/racing_red"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/rev_limit_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Features -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="ADVANCED FEATURES"
+            style="@style/RacingTextSubtitle" />
+
+        <Switch
+            android:id="@+id/launch_control_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/launch_control"
+            android:textColor="@color/text_primary" />
+
+        <Switch
+            android:id="@+id/anti_lag_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/anti_lag"
+            android:textColor="@color/text_primary" />
+
+        <Button
+            android:id="@+id/apply_tuning_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/apply_tuning"
+            style="@style/RacingButton" />
+
+    </LinearLayout>
+
+</ScrollView>

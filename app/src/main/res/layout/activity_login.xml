@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="32dp">
+
+        <!-- ── Branding ─────────────────────────────────── -->
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/checkered_flag_bg"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PRO RACING OBD"
+            android:textColor="@color/text_primary"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.12" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SURINA"
+            android:textColor="#888888"
+            android:textSize="11sp"
+            android:textStyle="italic"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="0.22"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Red accent line -->
+        <View
+            android:layout_width="48dp"
+            android:layout_height="2dp"
+            android:background="@color/racing_red"
+            android:layout_marginBottom="32dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sign in to sync your vehicle profile"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:fontFamily="sans-serif"
+            android:layout_marginBottom="28dp" />
+
+        <!-- ── Google Sign-In ─────────────────────────── -->
+        <Button
+            android:id="@+id/btn_google_signin"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="Sign in with Google"
+            android:textColor="#000000"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:backgroundTint="#FFFFFF"
+            android:drawableStart="@android:drawable/ic_dialog_email"
+            android:drawablePadding="12dp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- ── Divider ─────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="@color/divider" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  or try something else  "
+                android:textColor="@color/text_disabled"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif-condensed"
+                android:textAllCaps="true"
+                android:letterSpacing="0.1" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="@color/divider" />
+        </LinearLayout>
+
+        <!-- ── Social mosaic grid ─────────────────────── -->
+        <!-- Row 1: Facebook | X | Snapchat -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="8dp">
+
+            <!-- Facebook -->
+            <LinearLayout
+                android:id="@+id/tile_facebook"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#1A1A2E"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="f"
+                    android:textColor="#1877F2"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:fontFamily="serif" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Facebook"
+                    android:textColor="#888888"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+            <!-- X / Twitter -->
+            <LinearLayout
+                android:id="@+id/tile_twitter"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#0D0D0D"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="𝕏"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="X / Twitter"
+                    android:textColor="#888888"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+            <!-- Snapchat -->
+            <LinearLayout
+                android:id="@+id/tile_snapchat"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#1A1A00"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👻"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Snapchat"
+                    android:textColor="#888888"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Row 2: Instagram | Amazon | AutoZone -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="28dp">
+
+            <!-- Instagram -->
+            <LinearLayout
+                android:id="@+id/tile_instagram"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#1A0A10"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📸"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Instagram"
+                    android:textColor="#888888"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+            <!-- Amazon -->
+            <LinearLayout
+                android:id="@+id/tile_amazon"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#140B00"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="a"
+                    android:textColor="#FF9900"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:fontFamily="serif" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Amazon"
+                    android:textColor="#888888"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+            <!-- AutoZone -->
+            <LinearLayout
+                android:id="@+id/tile_autozone"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="#1A0000"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AZ"
+                    android:textColor="#FF0000"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-condensed" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AutoZone"
+                    android:textColor="#888888"
+                    android:textSize="9sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ── Skip / continue without sign-in ──────── -->
+        <TextView
+            android:id="@+id/btn_skip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Skip for now — use locally"
+            android:textColor="@color/text_disabled"
+            android:textSize="12sp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,21 @@
+# Gradle build cache & outputs
+.gradle/
+build/
+app/build/
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+.DS_Store
+
+# Firebase — contains project secrets, add manually per-machine
+app/google-services.json
+
+# Keystore
+*.jks
+*.keystore
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log

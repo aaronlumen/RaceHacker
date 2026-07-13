@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pro Racing OBD</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_diagnostics">Diagnostics</string>
+    <string name="nav_ecu_flash">ECU Flash</string>
+    <string name="nav_tuning">Tuning</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Dashboard -->
+    <string name="status_connected">CONNECTED</string>
+    <string name="status_disconnected">DISCONNECTED</string>
+    <string name="vehicle_name">Vehicle</string>
+
+    <!-- Diagnostics -->
+    <string name="read_codes">Read Codes</string>
+    <string name="clear_codes">Clear Codes</string>
+    <string name="dtc_count">Codes Found: 0</string>
+    <string name="mil_status">MIL: OFF</string>
+    <string name="no_codes_found">No trouble codes found</string>
+
+    <!-- ECU Flash -->
+    <string name="backup_ecu">Backup ECU ROM</string>
+    <string name="flash_ecu">Flash ECU</string>
+    <string name="select_bin">Select BIN File</string>
+    <string name="flash_progress">0%</string>
+    <string name="flash_status">Ready</string>
+    <string name="selected_file">No file selected</string>
+
+    <!-- Tuning -->
+    <string name="afr_label">Air/Fuel Ratio (WOT)</string>
+    <string name="timing_label">Max Timing Advance</string>
+    <string name="boost_label">Target Boost</string>
+    <string name="rev_limit_label">Rev Limit</string>
+    <string name="launch_control">Launch Control</string>
+    <string name="anti_lag">Anti-Lag</string>
+    <string name="conservative_tune">Conservative</string>
+    <string name="street_tune">Street</string>
+    <string name="aggressive_tune">Aggressive</string>
+    <string name="race_tune">Race</string>
+    <string name="apply_tuning">Apply Tuning</string>
+
+    <!-- Settings -->
+    <string name="vehicle_type">Vehicle Type</string>
+    <string name="cable_type">Cable Type</string>
+    <string name="bluetooth_devices">Bluetooth Devices</string>
+    <string name="scan_devices">Scan for Devices</string>
+    <string name="connect_device">Connect</string>
+    <string name="connection_status">Status: DISCONNECTED</string>
+
+    <!-- Common -->
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="warning">Warning</string>
+    <string name="success">Success</string>
+
+    <!-- Auth — replace placeholder values with real credentials from Firebase Console / Facebook Dashboard -->
+    <string name="google_web_client_id">YOUR_GOOGLE_WEB_CLIENT_ID_HERE</string>
+    <string name="facebook_app_id">YOUR_FACEBOOK_APP_ID_HERE</string>
+    <string name="facebook_client_token">YOUR_FACEBOOK_CLIENT_TOKEN_HERE</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_FACEBOOK_APP_ID_HERE</string>
+</resources>

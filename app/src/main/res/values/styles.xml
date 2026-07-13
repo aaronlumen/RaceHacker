@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base Racing Theme -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/racing_black</item>
+        <item name="colorPrimaryDark">@color/racing_black</item>
+        <item name="colorAccent">@color/racing_red</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:statusBarColor">@color/racing_black</item>
+        <item name="android:navigationBarColor">@color/racing_black</item>
+    </style>
+
+    <!-- Racing Button -->
+    <style name="RacingButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/racing_red</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <style name="RacingButtonSecondary" parent="RacingButton">
+        <item name="backgroundTint">@color/racing_gray</item>
+        <item name="strokeColor">@color/racing_red</item>
+        <item name="strokeWidth">2dp</item>
+    </style>
+
+    <!-- Racing Card -->
+    <style name="RacingCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/gauge_card_bg</item>
+        <item name="cardCornerRadius">6dp</item>
+        <item name="cardElevation">6dp</item>
+        <item name="contentPadding">0dp</item>
+    </style>
+
+    <!-- Text styles -->
+    <style name="RacingTextTitle">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:letterSpacing">0.1</item>
+    </style>
+
+    <style name="RacingTextSubtitle">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/racing_red</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:letterSpacing">0.12</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
+    <style name="RacingTextBody">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="RacingTextCaption">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- Gauge value — large monospace number -->
+    <style name="GaugeValue">
+        <item name="android:textSize">30sp</item>
+        <item name="android:textColor">@color/gauge_normal</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Gauge label (name) -->
+    <style name="GaugeName">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.12</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+    </style>
+
+    <!-- Gauge unit (small, below value) -->
+    <style name="GaugeUnit">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/text_disabled</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+
+    <!-- Bottom nav -->
+    <style name="BottomNavigationTheme" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemBackground">@color/racing_black</item>
+        <item name="itemIconTint">@color/racing_red</item>
+        <item name="itemTextColor">@color/racing_red</item>
+        <item name="elevation">8dp</item>
+    </style>
+</resources>
