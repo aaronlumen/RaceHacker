@@ -1,0 +1,16 @@
+[Unit]
+Description=Exempt loopback<->loopback traffic from NAT (fixes Gradle daemon & Android Studio on DGX Spark)
+Documentation=https://github.com/aaronlumen/RaceHacker
+After=network-online.target docker.service libvirtd.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Idempotent: skip if the rule already exists, otherwise insert it at the very top of
+# the nat POSTROUTING chain so loopback traffic is returned before any MASQUERADE rule.
+ExecStart=/bin/sh -c 'iptables -t nat -C POSTROUTING -s 127.0.0.0/8 -d 127.0.0.0/8 -j RETURN 2>/dev/null || iptables -t nat -I POSTROUTING 1 -s 127.0.0.0/8 -d 127.0.0.0/8 -j RETURN'
+ExecStop=/bin/sh -c 'iptables -t nat -D POSTROUTING -s 127.0.0.0/8 -d 127.0.0.0/8 -j RETURN 2>/dev/null || true'
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,3 @@
+# Copy this to <project-root>/local.properties (which is .gitignored).
+# Location of the Android SDK on the DGX Spark (from the Debian `android-sdk` package).
+sdk.dir=/usr/lib/android-sdk

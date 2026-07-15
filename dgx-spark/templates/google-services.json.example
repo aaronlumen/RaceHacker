@@ -1,0 +1,40 @@
+{
+  "_comment": "PLACEHOLDER — lets the com.google.gms.google-services plugin build. Real Google Sign-In needs a real Firebase project: register the app package_name + your debug/release signing SHA-1, then replace this file with the real one downloaded from the Firebase console. Copy to app/google-services.json and set package_name to your applicationId.",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "proracingobd-local",
+    "storage_bucket": "proracingobd-local.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "xyz.surina.proracingobd"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "000000000000-0000000000000000000000000000000000.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0000000000000000000000000000000000"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "000000000000-0000000000000000000000000000000000.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
