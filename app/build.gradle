@@ -41,6 +41,9 @@ android {
 }
 
 dependencies {
+    // CarHackerKit toolkit (OBD/CAN/security tools) — now an in-process library module
+    implementation project(':carhackerkit')
+
     // AndroidX Core
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core:1.12.0'

@@ -91,13 +91,13 @@ public class LoginActivity extends AppCompatActivity {
                                     if (task.isSuccessful()) {
                                         onAuthSuccess(firebaseAuth.getCurrentUser());
                                     } else {
-                                        showError("Facebook sign-in failed");
+                                        continueLocally("Couldn't reach Facebook — continuing offline");
                                     }
                                 });
                     }
                     @Override public void onCancel() {}
                     @Override public void onError(FacebookException e) {
-                        showError("Facebook: " + e.getMessage());
+                        continueLocally("Facebook sign-in unavailable — continuing offline");
                     }
                 });
     }
@@ -123,6 +123,7 @@ public class LoginActivity extends AppCompatActivity {
         TextView skip = findViewById(R.id.btn_skip);
         skip.setOnClickListener(v -> {
             // Continue without sign-in; profile syncing will be disabled
+            AuthManager.getInstance(this).enterLocalMode();
             goToMain();
         });
     }
@@ -137,6 +138,11 @@ public class LoginActivity extends AppCompatActivity {
         facebookCallbackManager.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == RC_GOOGLE_SIGN_IN) {
+            // The user explicitly backed out of the Google chooser — leave them on
+            // the login screen so they can pick another option.
+            if (resultCode == RESULT_CANCELED) {
+                return;
+            }
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
@@ -146,11 +152,19 @@ public class LoginActivity extends AppCompatActivity {
                             if (t.isSuccessful()) {
                                 onAuthSuccess(firebaseAuth.getCurrentUser());
                             } else {
-                                showError("Google sign-in failed");
+                                // Firebase rejected the credential (e.g. no backing
+                                // project) — fail forward into a local session.
+                                continueLocally("Couldn't reach Google — continuing offline");
                             }
                         });
             } catch (ApiException e) {
-                showError("Sign-in error: " + e.getStatusCode());
+                // GoogleSignInStatusCodes.SIGN_IN_CANCELLED == 12501
+                if (e.getStatusCode() == 12501) {
+                    return;
+                }
+                // Any real failure (misconfigured client, developer error, network)
+                // shouldn't dead-end the user — drop straight into local mode.
+                continueLocally("Google sign-in unavailable — continuing offline");
             }
         }
     }
@@ -159,6 +173,18 @@ public class LoginActivity extends AppCompatActivity {
 
     private void onAuthSuccess(FirebaseUser user) {
         AuthManager.getInstance(this).saveAuthState(user);
+        goToMain();
+    }
+
+    /**
+     * Fail forward: when a social sign-in can't complete, continue into the app as
+     * a local/guest session instead of dead-ending on the login screen.
+     */
+    private void continueLocally(String reason) {
+        if (reason != null) {
+            Toast.makeText(this, reason, Toast.LENGTH_SHORT).show();
+        }
+        AuthManager.getInstance(this).enterLocalMode();
         goToMain();
     }
 

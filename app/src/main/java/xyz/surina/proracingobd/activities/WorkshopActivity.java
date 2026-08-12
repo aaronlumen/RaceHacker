@@ -74,20 +74,10 @@ public class WorkshopActivity extends AppCompatActivity {
             tvEcuInfo.setText("ECU: SIMULATED  |  VIN: SIM00000000000000  |  Cal: DEMO-1.0");
         });
 
-        // Launch the standalone CarHackerKit app (installed as a separate APK).
-        // Try the release package id first, then the debug-suffixed one.
-        findViewById(R.id.btn_open_carhackerkit).setOnClickListener(v -> {
-            Intent launch = null;
-            for (String pkg : new String[]{"com.carhacker.kit", "com.carhacker.kit.debug"}) {
-                launch = getPackageManager().getLaunchIntentForPackage(pkg);
-                if (launch != null) break;
-            }
-            if (launch != null) {
-                startActivity(launch);
-            } else {
-                tvConnectionStatus.setText("CarHackerKit is not installed on this device");
-            }
-        });
+        // Open the CarHackerKit toolkit in-process (now a library module bundled in
+        // this app), instead of hunting for a separately-installed APK.
+        findViewById(R.id.btn_open_carhackerkit).setOnClickListener(v ->
+                startActivity(new Intent(this, com.carhacker.kit.ui.MainActivity.class)));
 
         // Back to mode select
         findViewById(R.id.btn_workshop_back).setOnClickListener(v -> finish());
