@@ -31,26 +31,17 @@
     <!-- Wake lock to keep processing during tests -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    y<application
-        android:name=".CarHackerApp"
-        android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.CarHackerKit"
-        tools:targetApi="34">
-        
+    <!-- Library manifest: no <application> attributes (icon/label/theme/name) so
+         nothing conflicts when merged into :app. The toolkit screen is launched
+         in-process from Workshop; it keeps the USB-attached filter but no LAUNCHER. -->
+    <application>
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.CarHackerKit">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            
+
             <!-- USB Device Attached -->
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />

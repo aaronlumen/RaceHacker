@@ -1,5 +1,7 @@
 plugins {
-    id 'com.android.application'
+    // Library module: consumed in-process by :app (was com.android.application,
+    // which built a separate APK and could not be depended on).
+    id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
 }
 
@@ -8,33 +10,27 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.carhacker.kit"
-        minSdk 26
-        targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
+        // minSdk must be <= the consuming app's minSdk (:app is 24).
+        minSdk 24
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            debuggable true
-            applicationIdSuffix ".debug"
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        // Match :app (Java 11) so the merged bytecode level is consistent.
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '11'
     }
 
     buildFeatures {
