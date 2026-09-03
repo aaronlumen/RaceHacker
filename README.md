@@ -2,9 +2,13 @@
 
 ![Carbon Fiber](app/src/main/res/drawable/carbon_fiber_bg.png)
 
-> **Real-time OBD2 racing dashboard for Android** — ELM327 Bluetooth · Live gauges · ECU flash · Social login · VIN auto-detect
+> **Dual-mode Android OBD2 toolkit** — a real-time ELM327 racing dashboard *and* an in-vehicle
+> diagnostics/security workshop, in one app.
 >
-> *Package:* `xyz.surina.proracingobd` · *Min SDK:* 24 (Android 7+) · *Target:* SDK 34
+> [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+> ![Min SDK 24](https://img.shields.io/badge/minSdk-24-informational)
+> ![Target SDK 34](https://img.shields.io/badge/targetSdk-34-informational)
+> ![Kotlin%20%2B%20Java](https://img.shields.io/badge/Kotlin%20%2B%20Java-11-orange)
 
 ---
 
@@ -17,185 +21,230 @@
 
 ---
 
-## What We Built Tonight
+## ⚠️ Safety Disclaimer
 
-### ✅ Bluetooth Device Search
-Replaced the fixed 5-device list with a live **search filter** — type any part of the device name to narrow down 20+ paired adapters instantly.
+**This app can read, write, and flash your vehicle's ECU.** Modifying tuning parameters,
+disabling safety limiters, or flashing a ROM can damage your engine, void your warranty, or
+violate emissions law — and mistakes made through the CAN bus / UDS tooling in Workshop mode can
+affect the vehicle's control units directly. Before touching real hardware:
 
-### ✅ Real OBD2 Gauge Data
-Removed the fake `simulateGaugeUpdates()` loop entirely. Gauges now show:
-- **`--`** (muted gray) when not connected
-- **Live sensor values** polled every 500 ms via real ELM327 PID commands when connected
-- Color-coded: 🟢 Normal · 🟠 Warning · 🔴 Critical
+- **Try Simulator mode first** (Workshop → Simulator) — no vehicle or adapter required.
+- **Always back up your ECU ROM** before flashing.
+- Only use tuning/flashing features on a vehicle in a safe location, engine off unless testing
+  requires it, battery voltage 13.5–14.5V.
+- The developers are not responsible for damage resulting from use of this application.
 
-**PIDs polled:**
+## Overview
 
-| Gauge | PID | Formula |
-|-------|-----|---------|
-| RPM | `010C` | `(A*256+B)/4` |
-| Speed | `010D` | `A * 0.621371` mph |
-| Coolant Temp | `0105` | `(A-40)*9/5+32` °F |
-| Intake Temp | `010F` | `(A-40)*9/5+32` °F |
-| Throttle | `0111` | `A*100/255` % |
-| Boost | `010B`+`0133` | MAP vs baro, PSI |
-| Battery | `ATRV` | volts |
-| Timing | `010E` | `A/2 - 64` deg |
-| Fuel Level | `012F` | `A*100/255` % |
-| AFR | `0106/0107` | fuel trim calc |
-
-### ✅ Visual Upgrade — Carbon Fiber + Checkered Flag
-
-| Asset | Usage |
-|-------|-------|
-| ![flag](app/src/main/res/drawable/checkered_flag_bg.png) | Dashboard header · Login screen logo |
-| Carbon fiber texture | Gauge card background overlay (α 18%) |
-
-- Racing-black theme (`#0A0A0A` background, `#CC0000` red accents)
-- Gauge values: 30sp monospace bold
-- 3dp red top accent bar on each gauge card
-- "**SURINA**" italic silver watermark — always visible, never intrusive
-
-### ✅ Vehicle Expansion — 50+ Profiles + VIN Auto-Detect
-
-App reads the VIN via Mode 09 PID 02, parses the WMI (first 3 chars), and auto-selects the matching profile. Falls back to fetching a **plugin pack** from:
+Pro Racing OBD is one Android Studio project with two apps merged into it, selected at launch:
 
 ```
-GET https://race.surina.xyz/api/v1/profiles/{vin8}
-    https://race.e164.cloud/api/v1/profiles/{vin8}   ← fallback
+LoginActivity → ModeSelectActivity → ┬─ MainActivity        (Racing mode)
+                                      └─ WorkshopActivity  →  CarHackerKit UI (Workshop mode)
 ```
 
-**Supported makes:**
+- **Racing mode** (`:app`) — a live carbon-fiber-themed OBD2 dashboard, DTC diagnostics, ECU
+  flashing, and tuning, built around 50+ auto-detected vehicle profiles.
+- **Workshop mode** (`:carhackerkit`, run in-process inside the same app) — a deeper diagnostics
+  and security toolkit: CAN bus monitoring, PID browsing, UDS/ECU discovery, and seed-key testing.
 
-| Make | Models |
-|------|--------|
-| BMW | N54 · N55 · S58 · B58 |
-| Ford | F-150 · Powerstroke · Mustang · Explorer · Raptor |
-| Chevy / GMC | Silverado · Duramax · Camaro · Corvette · Acadia · Sierra |
-| Dodge / Jeep | Hemi · RAM 1500 · Cummins · Challenger · Charger · Cherokee · Grand Cherokee · Wrangler |
-| Toyota / Lexus | Tacoma · Tundra · 4Runner · Camry · Supra · IS · GS · RX · RC-F |
-| Nissan / Infiniti | GT-R · 370Z · Titan · Frontier · Q50 · Q60 |
-| Honda / Acura | Civic Si · Accord · Ridgeline · TLX · NSX · Integra |
-| Mitsubishi | Evo · Eclipse · Outlander |
-| Subaru | WRX |
-| VW / Audi | VAG platform |
-| Generic | OBD2 Generic · Diesel Generic · Plugin Pack |
+Login uses Google/Facebook via Firebase Auth when configured, but **fails forward to a local
+guest session** if Firebase isn't set up — so the app is fully usable without any backend
+configuration.
 
-### ✅ Social Login (Google-first)
+## Features
 
-```
-┌─────────────────────────────────────┐
-│   🏁  PRO RACING OBD               │
-│        SURINA                       │
-│                                     │
-│  [ Sign in with Google          ]   │  ← primary, full-width
-│                                     │
-│  ── or try something else ──        │
-│                                     │
-│  [ f Facebook ] [ 𝕏 X ] [ 👻 Snap ]│  ← mosaic
-│  [ 📸 Insta  ] [ a Amazon] [AZ AZ ]│
-└─────────────────────────────────────┘
-```
+### Racing mode (`:app`)
 
-- **Google Sign-In** via Firebase Auth (full OAuth, ID token → profile sync)
-- **Facebook Login** via Facebook SDK
-- X, Snapchat, Instagram, Amazon, AutoZone — tiles wired, coming soon
-- **Skip option** for local-only use (no sync)
-- VIN linked to Google account; profile synced to backend with Bearer token auth
+- **Live gauge dashboard** — RPM, speed, coolant/intake temp, throttle, boost, battery, timing,
+  fuel level, AFR — polled every ~500 ms over real ELM327 PID commands (no simulated data once
+  connected):
 
-### ✅ Package Renamed
+  | Gauge | PID | Formula |
+  |-------|-----|---------|
+  | RPM | `010C` | `(A*256+B)/4` |
+  | Speed | `010D` | `A * 0.621371` mph |
+  | Coolant Temp | `0105` | `(A-40)*9/5+32` °F |
+  | Intake Temp | `010F` | `(A-40)*9/5+32` °F |
+  | Throttle | `0111` | `A*100/255` % |
+  | Boost | `010B`+`0133` | MAP vs baro, PSI |
+  | Battery | `ATRV` | volts |
+  | Timing | `010E` | `A/2 - 64` deg |
+  | Fuel Level | `012F` | `A*100/255` % |
+  | AFR | `0106`/`0107` | fuel trim calc |
 
-`shop.surina.proracingobd` → **`xyz.surina.proracingobd`** — all 20 source files + Gradle + Manifest updated.
+  Color-coded 🟢 Normal · 🟠 Warning · 🔴 Critical, `--` shown when not connected.
+- **DTC diagnostics** — read/clear active, pending, and permanent codes; MIL status.
+- **ECU flash** — backup and restore ROM, with live flash progress.
+- **Tuning** — AFR, timing, boost, rev limiter, launch control (presets: Conservative, Street,
+  Aggressive, Race).
+- **50+ vehicle profiles with VIN auto-detect** — reads the VIN via Mode 09 PID 02, parses the
+  WMI, and auto-selects a matching profile (BMW, Ford, Chevy/GMC, Dodge/Jeep, Toyota/Lexus,
+  Nissan/Infiniti, Honda/Acura, Mitsubishi, Subaru, VW/Audi, and generic OBD2/diesel). Falls back
+  to fetching a remote "plugin pack" profile by VIN prefix.
+- **Bluetooth device search** — live filter across paired adapters instead of a fixed list.
+- **Social login** — Google Sign-In (Firebase Auth) and Facebook Login, with a Skip option for
+  local-only use; falls back to a guest session if unconfigured.
+- Carbon-fiber / checkered-flag racing UI theme.
 
----
+### Workshop mode (CarHackerKit, `:carhackerkit`)
 
-## Setup
+An in-vehicle diagnostics and security toolkit, launched from `WorkshopActivity` and run
+in-process (no separate app install required):
 
-### 1. Firebase (required for Google login)
-1. [console.firebase.google.com](https://console.firebase.google.com) → create project
-2. Add Android app → package: `xyz.surina.proracingobd`
-3. Download `google-services.json` → place in `app/`
-4. Authentication → enable **Google** sign-in
-5. Copy **Web Client ID** → `app/src/main/res/values/strings.xml` → `google_web_client_id`
+- **CAN bus monitor** — live ISO-TP frame capture, replay, and fuzzing.
+- **PID browser** — SAE J1979 Mode 01/09 PID enumeration.
+- **ECU info** — VIN, ECU name, calibration ID.
+- **DTC reader/clearer.**
+- **Security Tester** — UDS/ECU discovery and seed-key testing, for authorized diagnostic/security
+  work on vehicles you own or are engaged to test.
+- **Simulator mode** — exercise every feature above with no adapter or vehicle attached.
+- Connects over Bluetooth, USB, or Wi-Fi.
 
-### 2. Facebook (optional)
-Fill `facebook_app_id`, `facebook_client_token`, `fb_login_protocol_scheme` in `strings.xml`.
+## Architecture
 
-### 3. Build
-```bash
-./gradlew assembleDebug
-# or open in Android Studio and hit Run
-```
+Two Gradle modules in one project:
 
----
+| Module | Type | Package | Role |
+|---|---|---|---|
+| `:app` | `com.android.application` | `xyz.surina.proracingobd` | Racing dashboard, login, ECU flash/tuning — the installed app |
+| `:carhackerkit` | `com.android.library` | `com.carhacker.kit` | Workshop diagnostics/security toolkit, consumed in-process by `:app` via `implementation project(':carhackerkit')` |
 
-## Profile Sync API
+`WorkshopActivity` in `:app` launches `com.carhacker.kit.ui.MainActivity` from the library
+directly — Workshop mode runs inside the same process and APK as Racing mode, not as a separate
+installed app.
 
-```
-POST https://race.surina.xyz/api/v1/profile
-POST https://race.e164.cloud/api/v1/profile     ← auto-fallback
+## Tech Stack
 
-Authorization: Bearer <Firebase ID token>
-Content-Type: application/json
-
-{ "vin": "1FTZX17...", "profile": { ... } }
-```
-
----
+| | |
+|---|---|
+| Language | Kotlin + Java 11 |
+| Build | Gradle / AGP 8.13.2 |
+| SDK | compileSdk 34 · minSdk 24 (Android 7+) · targetSdk 34 |
+| Auth | Firebase Auth + BOM, `play-services-auth` (Google), Facebook Login SDK |
+| OBD | [`com.github.pires:obd-java-api`](PIRES_API_INTEGRATION.md) (via JitPack) |
+| Connectivity | `usb-serial-for-android` (USB ELM327), `androidx.bluetooth` (alpha) |
+| Storage | Room + `androidx.security:security-crypto` (`:carhackerkit`) |
+| Networking | OkHttp (profile sync), Gson |
+| Charts | MPAndroidChart |
+| Concurrency | Kotlin coroutines |
 
 ## Project Structure
 
 ```
 app/src/main/java/xyz/surina/proracingobd/
-├── activities/
-│   ├── LoginActivity.java       # Google-first social login
-│   └── MainActivity.java        # Bottom nav host + auth guard
-├── auth/
-│   ├── AuthManager.java         # Firebase auth singleton + SharedPrefs cache
-│   └── ProfileSyncService.java  # OkHttp → race.surina.xyz / race.e164.cloud
-├── fragments/
-│   ├── DashboardFragment.java   # Live gauge grid (real PID data)
-│   ├── DiagnosticsFragment.java # DTC read/clear
-│   ├── EcuFlashFragment.java    # ROM backup + flash
-│   ├── TuningFragment.java      # AFR, timing, boost, launch control
-│   └── SettingsFragment.java    # BT search filter + VIN auto-detect
-├── services/
-│   └── ObdConnectionService.java  # ELM327 RFCOMM + PID polling
-├── models/
-│   └── GaugeData.java             # NaN = no data sentinel
-├── adapters/
-│   ├── GaugeAdapter.java          # Color-coded gauge cards
-│   └── DtcAdapter.java
-├── vehicles/
-│   └── VehicleProfile.java        # 50+ profiles + detectFromVin() + fetchPluginProfile()
-└── utils/
-    └── DataLogger.java
+├── activities/   (LoginActivity, ModeSelectActivity, MainActivity, WorkshopActivity)
+├── adapters/     (DtcAdapter, GaugeAdapter)
+├── auth/         (AuthManager, ProfileSyncService)
+├── ecu/          (EcuFlashManager, TuningParameters)
+├── fragments/    (DashboardFragment, DiagnosticsFragment, EcuFlashFragment, TuningFragment, SettingsFragment)
+├── models/       (GaugeData)
+├── services/     (DtcManager, EnhancedObdService, ObdConnectionService, PiresObdManager)
+├── utils/        (DataLogger)
+└── vehicles/     (VehicleProfile)
+
+carhackerkit/src/main/java/com/carhacker/kit/
+├── CarHackerApp.kt
+├── can/          (CANProtocol.kt)
+├── obd/          (OBDConnection.kt, OBDProtocol.kt, PIDDefinitions.kt)
+├── security/     (SecurityTester.kt)
+└── ui/           (MainActivity.kt, LogAdapter.kt)
 ```
 
+## Getting Started
+
+### Prerequisites
+
+- Android Studio (latest)
+- JDK 11+
+- Android SDK 34
+
+### Build & run
+
+```bash
+git clone https://github.com/aaronlumen/RaceHacker.git
+cd RaceHacker
+./gradlew :app:installDebug     # build + install on a connected device/emulator
+# or open the project in Android Studio and hit Run
+```
+
+The app builds and runs with **no backend configuration required** — login falls back to a local
+guest session automatically.
+
+### Optional: social login setup
+
+1. [console.firebase.google.com](https://console.firebase.google.com) → create a project → add an
+   Android app with package `xyz.surina.proracingobd`.
+2. Download `google-services.json` → place in `app/`.
+3. Authentication → enable **Google** sign-in.
+4. Copy the **Web Client ID** → `app/src/main/res/values/strings.xml` → `google_web_client_id`.
+5. (Optional) Fill in `facebook_app_id`, `facebook_client_token`, `fb_login_protocol_scheme` in
+   `strings.xml` for Facebook Login.
+
+## Usage
+
+### No hardware needed (Simulator / demo)
+
+- **Workshop mode** → Simulator — exercises PID browsing, DTC read/clear, CAN capture/replay, and
+  UDS discovery against synthetic data.
+- **Racing mode** dashboard shows `--` on each gauge until an adapter is connected.
+
+### With a real ELM327 adapter
+
+1. Pair your Bluetooth ELM327 adapter in Android settings (or connect via USB/Wi-Fi in Workshop
+   mode).
+2. Plug the adapter into the vehicle's OBD2 port, ignition ON.
+3. In-app: Settings tab (Racing) or Connect (Workshop) → search/select your adapter → Connect.
+
+Common AT/PID commands used under the hood:
+
+```
+ATZ      - Reset adapter
+ATE0     - Echo off
+ATSP6    - Set protocol (ISO 15765-4 CAN)
+0100     - Request supported PIDs
+03       - Request DTCs
+04       - Clear DTCs
+```
+
+**Troubleshooting**: no data on gauges → confirm engine is running and protocol is correct, try a
+generic OBD2 adapter first. Can't connect → re-check Bluetooth pairing and that the adapter is
+seated in the OBD2 port with ignition on.
+
+## Permissions
+
+| Permission | Why |
+|---|---|
+| `BLUETOOTH`, `BLUETOOTH_ADMIN`, `BLUETOOTH_CONNECT`, `BLUETOOTH_SCAN` | Pair/connect to ELM327 Bluetooth adapters |
+| `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` | Required by Android for Bluetooth device scanning |
+| USB host (`android.hardware.usb.host`) | USB-serial ELM327 adapters |
+| `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE` | Data logging (CSV), ECU ROM backup files |
+| `INTERNET` | Firebase Auth, profile sync, plugin-pack profile fetch |
+| `FOREGROUND_SERVICE`, `WAKE_LOCK` | Keep CAN/OBD monitoring alive during Workshop sessions |
+
+## Documentation
+
+- **[PIRES_API_INTEGRATION.md](PIRES_API_INTEGRATION.md)** — the standard OBD2 PID reference (80+
+  PIDs by category via the Pires OBD-Java API). This is a living document — proprietary
+  manufacturer PID sets (starting with Harley-Davidson) are actively being added.
+- **[ios-testkit/README.md](ios-testkit/README.md)** — unrelated macOS/Xcode shell scripts for
+  iterating on a physical iPhone; not part of the Android app.
+
+## Contributing
+
+Single-developer project currently — issues and PRs are welcome, but there's no formal
+CONTRIBUTING guide yet.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
+
+## Known Gaps
+
+- No custom launcher icon wired in yet (uses a placeholder system icon).
+- X, Snapchat, Instagram, Amazon, AutoZone login tiles are present in the UI but not yet wired up
+  (Google and Facebook are functional).
+
 ---
 
-## Warnings
-
-> **ECU flashing can damage your vehicle.** Always backup your ROM first.
-> Many tuning parameters are for **race use only** and may not be street legal.
-> The developers are not responsible for damage resulting from use of this application.
-
----
-
-## Version History
-
-### v1.1.0 — Tonight's session
-- Real OBD2 PID polling — fake data removed
-- Bluetooth device search filter
-- Carbon fiber + checkered flag UI
-- SURINA watermark
-- 50+ vehicle profiles with VIN auto-detection
-- Plugin pack fetch from race.surina.xyz / race.e164.cloud
-- Google + Facebook + social mosaic login
-- Package renamed to `xyz.surina.proracingobd`
-
-### v1.0.0 — Initial release
-- 10-vehicle profiles, ELM327 connection, basic gauges, ECU flash, tuning presets
-
----
-
-*SURINA · Aaron Lumen · [race.surina.xyz](https://race.surina.xyz)*  🏁
+*SURINA · Aaron Lumen · [race.surina.xyz](https://race.surina.xyz)* 🏁
