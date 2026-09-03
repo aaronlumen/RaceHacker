@@ -15,7 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.carhacker.kit.R
-import com.carhacker.kit.databinding.ActivityMainBinding
+import com.carhacker.kit.databinding.ActivityCarhackerMainBinding
 import com.carhacker.kit.can.CANProtocol
 import com.carhacker.kit.obd.*
 import com.carhacker.kit.security.SecurityTester
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityCarhackerMainBinding
     private var obdConnection: OBDConnection? = null
     private var obdProtocol: OBDProtocol? = null
     private var canProtocol: CANProtocol? = null
@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityCarhackerMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
         setupUI()

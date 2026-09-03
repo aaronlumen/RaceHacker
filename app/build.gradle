@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace 'xyz.surina.proracingobd'
+    namespace 'xyz.surina.racehacker'
     compileSdk 34
 
     defaultConfig {
-        applicationId "xyz.surina.proracingobd"
+        applicationId "xyz.surina.racehacker"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -43,6 +43,11 @@ android {
 dependencies {
     // CarHackerKit toolkit (OBD/CAN/security tools) — now an in-process library module
     implementation project(':carhackerkit')
+
+    // firebase authentication
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation platform('com.google.firebase:firebase-bom:34.18.0')
+
 
     // AndroidX Core
     implementation 'androidx.appcompat:appcompat:1.6.1'

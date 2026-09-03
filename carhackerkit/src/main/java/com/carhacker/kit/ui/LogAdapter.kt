@@ -43,7 +43,7 @@ class LogAdapter : RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
             entry.message.startsWith("⚠") -> 0xFFFF9800.toInt() // Orange
             entry.message.startsWith("TX:") -> 0xFF2196F3.toInt() // Blue
             entry.message.startsWith("RX:") -> 0xFF9C27B0.toInt() // Purple
-            else -> 0xFF000000.toInt() // Black
+            else -> 0xFFF0F0F0.toInt() // RaceHacker primary text
         }
         holder.tvMessage.setTextColor(color)
     }

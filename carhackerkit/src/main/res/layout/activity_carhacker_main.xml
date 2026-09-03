@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/carbon_fiber_bg"
+    android:padding="16dp">
+
+    <!-- Compact race header: crop the flag artwork instead of using its full
+         intrinsic bitmap height as a layout background. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="104dp"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/checkered_flag_bg"
+            android:scaleType="centerCrop"
+            android:alpha="0.42"
+            android:contentDescription="" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#A6000000" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="RACEHACKER  //  TOOLKIT"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-condensed"
+            android:letterSpacing="0.12"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvConnectionStatus"
+            android:layout_width="144dp"
+            android:layout_height="wrap_content"
+            android:text="Disconnected"
+            android:textColor="#FF5252"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:padding="8dp"
+            android:background="@drawable/status_bg" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="bottom"
+            android:background="#CC0000" />
+    </FrameLayout>
+
+    <!-- Connection Buttons -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        app:cardElevation="2dp"
+        app:cardCornerRadius="8dp"
+        app:cardBackgroundColor="#E8121A17"
+        app:strokeColor="#CC0000"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Connection"
+                android:textColor="#FF2222"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:paddingBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnConnectUsb"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="USB"
+                    android:textSize="12sp"
+                    style="@style/Widget.RaceHacker.ToolkitButton" />
+
+                <Button
+                    android:id="@+id/btnConnectBluetooth"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="4dp"
+                    android:text="BT"
+                    android:textSize="12sp"
+                    style="@style/Widget.RaceHacker.ToolkitButton" />
+
+                <Button
+                    android:id="@+id/btnConnectWifi"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="4dp"
+                    android:text="WiFi"
+                    android:textSize="12sp"
+                    style="@style/Widget.RaceHacker.ToolkitButton" />
+
+                <Button
+                    android:id="@+id/btnSimulator"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="4dp"
+                    android:text="Sim"
+                    android:textSize="12sp"
+                    style="@style/Widget.RaceHacker.ToolkitButton" />
+
+                <Button
+                    android:id="@+id/btnDisconnect"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="X"
+                    android:textSize="12sp"
+                    android:enabled="false"
+                    style="@style/Widget.RaceHacker.ToolkitButton" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Features -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/layoutFeatures"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardElevation="2dp"
+        app:cardCornerRadius="8dp"
+        app:cardBackgroundColor="#E8121A17"
+        app:strokeColor="#CC0000"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Security Testing"
+                android:textColor="#FF2222"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:paddingBottom="8dp" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3"
+                android:rowCount="3"
+                android:useDefaultMargins="true">
+
+                <Button
+                    android:id="@+id/btnEnumeratePids"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="Enum PIDs"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnBruteForcePids"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="Brute Force"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnReadDtcs"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="Read DTCs"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnClearDtcs"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="Clear DTCs"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnGetVehicleInfo"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="Vehicle Info"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnSecurityScan"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="Security Scan"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitPrimaryButton" />
+            </GridLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Log Output -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cardElevation="2dp"
+        app:cardCornerRadius="8dp"
+        app:cardBackgroundColor="#E8121A17"
+        app:strokeColor="#CC0000"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Console Output"
+                    android:textColor="#FF2222"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnExportLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="Export"
+                    android:textSize="10sp"
+                    style="@style/Widget.Material3.Button.TextButton" />
+
+                <Button
+                    android:id="@+id/btnClearLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Clear"
+                    android:textSize="10sp"
+                    style="@style/Widget.Material3.Button.TextButton" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvLog"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#D9080C0A"
+                android:padding="8dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>
