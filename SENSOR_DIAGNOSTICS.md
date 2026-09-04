@@ -5,6 +5,24 @@ normally looks like, what's actually worth flagging, and how to avoid false
 alarms. It's a knowledge base to implement *against*, not a description of
 what's implemented today — see the **Status** column below.
 
+## ⚠️ Open architecture gap: thresholds aren't vehicle-aware yet
+
+Exact normal ranges are vehicle/engine-specific — a 2006 Toyota, a 2018 Ford
+EcoBoost, and a 2025 GM truck can have meaningfully different normal PID
+behavior. Right now, `RuleBasedNarrationEngine`'s battery-voltage and coolant
+thresholds (the only ones implemented so far) are **global constants**, not
+tied to the selected `VehicleProfile` — which today has zero threshold/normal-
+range fields at all (just identity, ECU addresses, and capability flags).
+
+The generic thresholds already in the code (13.0V/12.8V battery, 5°F/min
+coolant rise, 160°F/10min slow-warmup) are reasonable defaults for "a typical
+gasoline engine," not vehicle-validated numbers. Before narrating any *more*
+sensors, or trusting these numbers on a real car, the real fix is: add
+per-vehicle normal-range fields to `VehicleProfile` and thread the current
+profile into the narration engine instead of using constants. Flagging this
+explicitly rather than quietly piling more global-constant rules on top of
+the same gap.
+
 ## Design principles (read before adding a new rule)
 
 Ace narrates safety-relevant conditions out loud while someone may be driving.
@@ -73,6 +91,61 @@ over-reacting**:
 | EGR Command / Position | Command vs. actual | — | Look for proper response, not just a specific percentage | 🔲 |
 | VVT/VCT Command & Actual | Cam angle correlation | Commanded and actual should track each other | One of the best live-data diagnostics for variable-valve-timing problems | 🔲 |
 | Transmission Temperature | Temperature trend | — | Particularly useful under towing/heavy-load conditions, if available | 🔲 |
+
+## Sensor relationships (often more diagnostic than any single reading)
+
+A sensor being individually "in range" can still be hiding a problem that
+only shows up in how it relates to another sensor. Worth checking these
+together once both sides of each pair are actually implemented:
+
+| Relationship | What should happen |
+|---|---|
+| MAF + RPM + Throttle | Throttle opens → MAF should respond → RPM/load follows |
+| STFT + LTFT + O2/Lambda | ECU adds fuel → mixture responds → fuel trim should generally move back toward zero |
+| VVT commanded + VVT actual | ECU commands cam movement → actual cam angle should follow with reasonable speed |
+| Throttle + MAP | Throttle opens → manifold pressure should respond appropriately |
+| ECT + IAT | ECT should gradually rise after startup; IAT behaves according to intake/under-hood conditions |
+| Upstream O2/Lambda + downstream O2 | Particularly useful for evaluating catalyst behavior |
+
+(Two of these are already implemented as correlations even without every
+sensor above existing yet: lean AFR + boost, and low oil pressure + high RPM
+— see `RuleBasedNarrationEngine`.)
+
+## Flag for investigation, don't immediately call "bad"
+
+Generic starting points — **not** universal truths; see the vehicle-awareness
+gap above. These describe "worth a closer look," not "something's broken":
+
+- **Fuel trim** — sustained combined STFT/LTFT around ±10–15% deserves
+  investigation; substantially beyond that is more suspicious.
+- **ECT** — failure to reach normal operating temperature, or overheating.
+- **MAF** — sudden dropouts, spikes, or values inconsistent with RPM/load.
+- **MAP** — implausible readings, or poor response to throttle.
+- **Throttle/APP** — disagreement between the two, or discontinuities.
+- **VVT** — commanded vs. actual angle consistently diverging.
+- **Fuel pressure** — instability, or pressure falling when demand increases.
+- **Voltage** — significant electrical-system fluctuations (beyond the
+  battery thresholds already implemented).
+- **Knock retard** — repeated substantial retard under comparable conditions.
+- **O2/Lambda** — implausible, stuck, or unusually slow response once the
+  engine is fully warmed.
+
+## Primary vs. secondary gauges (UI)
+
+Ties into PID auto-discovery (query the vehicle's supported-PID bitmask on
+connect — Mode 01 PID `00`/`20`/`40`/`60` — and only show gauges for what
+that specific vehicle actually supports, the way other OBD2 apps do):
+
+- **Primary screen** (Dashboard) — the flashy live gauges: RPM, speed, boost,
+  AFR, coolant, battery, etc. — the sensors someone glances at while driving.
+- **Secondary screen** — emissions/EVAP/transmission PIDs (EGR, EVAP purge,
+  O2 sensors, transmission temp, fuel trims, ...): denser, more
+  diagnostic-oriented data, presented as a list/detail view rather than
+  dashboard-style gauges, and populated only from PIDs the connected vehicle
+  actually reports supporting.
+
+Not built yet — noted here so it's part of the same design pass as PID
+auto-discovery rather than a separate effort later.
 
 ## Suggested build order
 
