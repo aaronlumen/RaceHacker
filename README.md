@@ -9,6 +9,13 @@
 > ![Min SDK 24](https://img.shields.io/badge/minSdk-24-informational)
 > ![Target SDK 34](https://img.shields.io/badge/targetSdk-34-informational)
 > ![Kotlin%20%2B%20Java](https://img.shields.io/badge/Kotlin%20%2B%20Java-11-orange)
+>
+> [![Download APK](https://img.shields.io/badge/Download-APK-success?logo=android)](https://github.com/aaronlumen/RaceHacker/releases/latest/download/RaceHacker.apk)
+
+Not on the Play Store yet — grab the latest signed APK directly from
+**[GitHub Releases](https://github.com/aaronlumen/RaceHacker/releases/latest)** and sideload it
+(enable "Install unknown apps" for your browser/file manager first). Every release is signed with
+the same key, so future updates install cleanly over an existing install.
 
 ---
 

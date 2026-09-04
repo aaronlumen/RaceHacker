@@ -4,6 +4,19 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Release signing lives outside the repo entirely — a keystore has no business in git.
+// Looked up from ~/.android/racehacker-keystore.properties so it's shared across every
+// checkout/worktree on this machine rather than tied to one working copy. On a machine
+// without that file (a fresh clone, CI, a collaborator), releaseSigning stays null and
+// the release build type just falls back to unsigned instead of failing the build.
+def keystorePropsFile = new File(System.getProperty('user.home'), '.android/racehacker-keystore.properties')
+def releaseSigning = null
+if (keystorePropsFile.exists()) {
+    def keystoreProps = new Properties()
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+    releaseSigning = keystoreProps
+}
+
 android {
     namespace 'xyz.surina.racehacker'
     compileSdk 34
@@ -19,10 +32,24 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigning != null) {
+            release {
+                storeFile file(releaseSigning['storeFile'])
+                storePassword releaseSigning['storePassword']
+                keyAlias releaseSigning['keyAlias']
+                keyPassword releaseSigning['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (releaseSigning != null) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
