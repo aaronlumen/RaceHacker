@@ -48,6 +48,8 @@ public class SettingsFragment extends Fragment {
     private TextView connectionStatusText;
     private EditText deviceSearchField;
     private Switch aceVocabularySwitch;
+    private Switch dataLoggingSwitch;
+    private TextView dataLoggingStatusText;
 
     private BluetoothAdapter bluetoothAdapter;
     private List<BluetoothDevice> deviceList = new ArrayList<>();
@@ -69,6 +71,8 @@ public class SettingsFragment extends Fragment {
         connectionStatusText = view.findViewById(R.id.connection_status_text);
         deviceSearchField = view.findViewById(R.id.device_search_field);
         aceVocabularySwitch = view.findViewById(R.id.ace_vocabulary_switch);
+        dataLoggingSwitch = view.findViewById(R.id.data_logging_switch);
+        dataLoggingStatusText = view.findViewById(R.id.data_logging_status_text);
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -78,9 +82,37 @@ public class SettingsFragment extends Fragment {
         setupDeviceSearch();
         setupButtons();
         setupAceVocabularySwitch();
+        setupDataLoggingSwitch();
         updateConnectionStatus();
 
         return view;
+    }
+
+    private void setupDataLoggingSwitch() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || main.getDataLogger() == null) return;
+
+        dataLoggingSwitch.setChecked(main.getDataLogger().isLogging());
+        updateDataLoggingStatus();
+        dataLoggingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                main.startDataLogging();
+            } else {
+                main.stopDataLogging();
+            }
+            updateDataLoggingStatus();
+        });
+    }
+
+    private void updateDataLoggingStatus() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || main.getDataLogger() == null || dataLoggingStatusText == null) return;
+
+        if (main.getDataLogger().isLogging() && main.getDataLogger().getCurrentLogFile() != null) {
+            dataLoggingStatusText.setText("Logging to " + main.getDataLogger().getCurrentLogFile().getName());
+        } else {
+            dataLoggingStatusText.setText("Not logging");
+        }
     }
 
     private void setupAceVocabularySwitch() {
@@ -106,6 +138,14 @@ public class SettingsFragment extends Fragment {
             main.getActionRegistry().setScreenPrefixActions(Arrays.asList(
                     ActionRegistry.prefixAction(this::connectByVoice, "connect to ", "connect ")
             ));
+            // Keep the switch/status text in sync if logging is started/stopped by
+            // voice (global command, works from any screen) while Settings is up.
+            main.setLoggingStateListener(() -> {
+                if (dataLoggingSwitch != null && main.getDataLogger() != null) {
+                    dataLoggingSwitch.setChecked(main.getDataLogger().isLogging());
+                }
+                updateDataLoggingStatus();
+            });
         }
     }
 
@@ -115,6 +155,7 @@ public class SettingsFragment extends Fragment {
         MainActivity main = (MainActivity) getActivity();
         if (main != null) {
             main.getActionRegistry().clearScreenActions();
+            main.setLoggingStateListener(null);
         }
     }
 

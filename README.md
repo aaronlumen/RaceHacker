@@ -83,6 +83,8 @@ configuration.
   Nissan/Infiniti, Honda/Acura, Mitsubishi, Subaru, VW/Audi, and generic OBD2/diesel). Falls back
   to fetching a remote "plugin pack" profile by VIN prefix.
 - **Bluetooth device search** — live filter across paired adapters instead of a fixed list.
+- **CSV data logging** — logs every live gauge reading (timestamped) to a CSV file, toggled from
+  Settings or by voice ("start logging" / "stop logging"). Runs regardless of which tab is showing.
 - **Social login** — Google Sign-In (Firebase Auth) and Facebook Login, with a Skip option for
   local-only use; falls back to a guest session if unconfigured.
 - Carbon-fiber / checkered-flag racing UI theme.
@@ -110,8 +112,10 @@ new accounts), available from a mic FAB on every screen:
 - **Long-press** to speak a command — Ace only ever listens in response to this explicit action,
   never on its own.
 - **Anything a button can do, by voice** — navigate any tab, scan/auto-detect the vehicle,
-  read/clear codes, back up the ECU, load tuning presets. Consequential actions (flashing the
-  ECU, applying tuning) require a spoken "yes" before running.
+  read/clear codes, back up the ECU, load tuning presets, start/stop CSV logging. Consequential
+  actions (flashing the ECU, applying tuning) require a spoken "yes" before running.
+- **Voice-driven device connect** — "connect to BT12" matches the spoken name/address against the
+  currently scanned Bluetooth device list and connects, no tapping required.
 - **"What can you do?"** — lists navigable screens and the current screen's own commands, built
   directly from what's actually registered so it can't drift out of sync.
 - **Two vocabulary levels** — BASIC (default, plain/jargon-free — "your fuel mixture's running a

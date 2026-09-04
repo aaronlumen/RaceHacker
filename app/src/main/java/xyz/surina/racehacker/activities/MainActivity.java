@@ -28,6 +28,7 @@ import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.auth.AuthManager;
 import xyz.surina.racehacker.fragments.*;
 import xyz.surina.racehacker.models.GaugeData;
+import xyz.surina.racehacker.utils.DataLogger;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
 import xyz.surina.racehacker.services.ObdConnectionService;
 import xyz.surina.racehacker.voice.Ace;
@@ -62,6 +63,12 @@ public class MainActivity extends AppCompatActivity {
     private final List<GaugeData> liveGauges = new ArrayList<>();
     private Runnable gaugeUpdateListener;
 
+    // Owned here for the same reason as liveGauges — logging shouldn't stop
+    // just because the user switched off the Dashboard tab. Was previously
+    // unused dead code (no start/stop control existed anywhere in the app).
+    private DataLogger dataLogger;
+    private Runnable loggingStateListener;
+
     // Ace — the app's voice copilot, owned once here so it persists across tab
     // switches instead of being re-created (and re-initializing TTS) per fragment.
     private Ace ace;
@@ -95,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
         // Set default vehicle profile
         currentVehicleProfile = VehicleProfile.createBmwN54Profile();
         obdService = new ObdConnectionService(currentVehicleProfile);
+        dataLogger = new DataLogger(this);
 
         setupLiveGauges();
         setupBluetoothPermissions();
@@ -220,6 +228,12 @@ public class MainActivity extends AppCompatActivity {
             // Fuel level mapped to FUEL_PRESSURE slot for display
             liveGauges.get(IDX_FUEL_PRES).setCurrentValue(fuelLevel);
 
+            if (dataLogger != null && dataLogger.isLogging()) {
+                for (GaugeData g : liveGauges) {
+                    if (g.hasData()) dataLogger.logData(g);
+                }
+            }
+
             if (gaugeUpdateListener != null) gaugeUpdateListener.run();
             // Debounced — only actually speaks up when there's something worth
             // saying, never on every poll tick. See Ace.checkForProactiveAlert().
@@ -234,6 +248,28 @@ public class MainActivity extends AppCompatActivity {
     /** Only DashboardFragment (the currently-visible screen, if any) should set this. */
     public void setGaugeUpdateListener(Runnable listener) {
         this.gaugeUpdateListener = listener;
+    }
+
+    // ─── Data logging ────────────────────────────────────────────────────────
+
+    public DataLogger getDataLogger() {
+        return dataLogger;
+    }
+
+    public boolean startDataLogging() {
+        boolean started = dataLogger.startLogging();
+        if (loggingStateListener != null) loggingStateListener.run();
+        return started;
+    }
+
+    public void stopDataLogging() {
+        dataLogger.stopLogging();
+        if (loggingStateListener != null) loggingStateListener.run();
+    }
+
+    /** Only the Settings screen (the currently-visible screen, if any) should set this. */
+    public void setLoggingStateListener(Runnable listener) {
+        this.loggingStateListener = listener;
     }
 
     // ─── Ace / voice commands ────────────────────────────────────────────────
@@ -255,6 +291,12 @@ public class MainActivity extends AppCompatActivity {
         actionRegistry.registerGlobal("Opening Settings.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_settings),
                 "settings", "connection screen");
+        actionRegistry.registerGlobal("Starting data logging.",
+                this::startDataLogging,
+                "start logging", "log data", "start data logging", "log to c s v");
+        actionRegistry.registerGlobal("Stopping data logging.",
+                this::stopDataLogging,
+                "stop logging", "stop data logging");
     }
 
     private void setupAce() {
@@ -352,6 +394,9 @@ public class MainActivity extends AppCompatActivity {
         if (obdService != null && obdService.isConnected()) {
             obdService.stopPidPolling();
             obdService.disconnect();
+        }
+        if (dataLogger != null && dataLogger.isLogging()) {
+            dataLogger.stopLogging();
         }
         if (ace != null) {
             ace.shutdown();
