@@ -48,6 +48,9 @@ public class SettingsFragment extends Fragment {
     private TextView connectionStatusText;
     private EditText deviceSearchField;
     private Switch aceVocabularySwitch;
+    private Switch aceMuteSwitch;
+    private android.widget.SeekBar acePitchSeekBar;
+    private Button aceTestSpeechButton;
     private Switch dataLoggingSwitch;
     private TextView dataLoggingStatusText;
 
@@ -71,6 +74,9 @@ public class SettingsFragment extends Fragment {
         connectionStatusText = view.findViewById(R.id.connection_status_text);
         deviceSearchField = view.findViewById(R.id.device_search_field);
         aceVocabularySwitch = view.findViewById(R.id.ace_vocabulary_switch);
+        aceMuteSwitch = view.findViewById(R.id.ace_mute_switch);
+        acePitchSeekBar = view.findViewById(R.id.ace_pitch_seekbar);
+        aceTestSpeechButton = view.findViewById(R.id.ace_test_speech_button);
         dataLoggingSwitch = view.findViewById(R.id.data_logging_switch);
         dataLoggingStatusText = view.findViewById(R.id.data_logging_status_text);
 
@@ -82,10 +88,40 @@ public class SettingsFragment extends Fragment {
         setupDeviceSearch();
         setupButtons();
         setupAceVocabularySwitch();
+        setupAceSpeechControls();
         setupDataLoggingSwitch();
         updateConnectionStatus();
 
         return view;
+    }
+
+    private void setupAceSpeechControls() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || main.getAce() == null) return;
+
+        aceMuteSwitch.setChecked(main.getAce().isMuted());
+        aceMuteSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
+                main.getAce().setMuted(isChecked));
+
+        // SeekBar 0-150 maps to pitch 0.5-2.0 (progress 50 = pitch 1.0, normal).
+        float currentPitch = main.getAce().getPitch();
+        acePitchSeekBar.setProgress(Math.round((currentPitch - 0.5f) * 100));
+        acePitchSeekBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    float pitch = 0.5f + (progress / 100f);
+                    main.getAce().setPitch(pitch);
+                }
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {
+                main.getAce().speakForTest("This is what Ace sounds like.");
+            }
+        });
+
+        aceTestSpeechButton.setOnClickListener(v ->
+                main.getAce().speakForTest("This is what Ace sounds like."));
     }
 
     private void setupDataLoggingSwitch() {
@@ -354,6 +390,12 @@ public class SettingsFragment extends Fragment {
      * the spoken remainder against the currently scanned device list's names/
      * addresses (substring, case-insensitive) and connects on a match.
      *
+     * If more than one paired device shares the same/similar name (real case:
+     * two adapters both named "OBDII" with different addresses), this
+     * deliberately does NOT guess and connect to the first one — asks the
+     * user to pick from the on-screen list instead, since dictating enough of
+     * a MAC address by voice to disambiguate isn't realistic.
+     *
      * @return what Ace should speak, or null to defer (empty query — e.g. just
      *         "connect" with nothing after — isn't this feature's to handle).
      */
@@ -363,17 +405,28 @@ public class SettingsFragment extends Fragment {
         if (deviceList.isEmpty()) {
             return "I don't have any devices to connect to yet — say \"scan for devices\" first.";
         }
+
+        List<BluetoothDevice> matches = new ArrayList<>();
         for (BluetoothDevice device : deviceList) {
             String name = device.getName();
             String haystack = ((name != null ? name : "") + " " + device.getAddress()).toLowerCase(Locale.US);
-            if (haystack.contains(query)) {
-                selectedDevice = device;
-                devicesAdapter.setSelectedDevice(device);
-                performConnect(device);
-                return "Connecting to " + (name != null ? name : device.getAddress()) + ".";
-            }
+            if (haystack.contains(query)) matches.add(device);
         }
-        return "I couldn't find a paired device matching \"" + query + "\".";
+
+        if (matches.isEmpty()) {
+            return "I couldn't find a paired device matching \"" + query + "\".";
+        }
+        if (matches.size() > 1) {
+            return matches.size() + " paired devices match \"" + query + "\" — "
+                    + "tap the one you want from the list on screen instead of by voice.";
+        }
+
+        BluetoothDevice device = matches.get(0);
+        selectedDevice = device;
+        devicesAdapter.setSelectedDevice(device);
+        performConnect(device);
+        String name = device.getName();
+        return "Connecting to " + (name != null ? name : device.getAddress()) + ".";
     }
 
     private void updateVehicleProfile() {

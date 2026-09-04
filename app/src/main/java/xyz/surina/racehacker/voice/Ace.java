@@ -85,12 +85,15 @@ public class Ace {
         this(context, new RuleBasedNarrationEngine(), new RuleBasedCommandHandler(), actionRegistry);
     }
 
+    private boolean muted;
+
     public Ace(Context context, NarrationEngine narrationEngine, CommandHandler commandHandler, ActionRegistry actionRegistry) {
         this.appContext = context.getApplicationContext();
         this.narrationEngine = narrationEngine;
         this.commandHandler = commandHandler;
         this.actionRegistry = actionRegistry;
         this.vocabularyLevel = VocabularyPrefs.getLevel(appContext);
+        this.muted = AceSpeechPrefs.isMuted(appContext);
     }
 
     public void setListener(Listener listener) {
@@ -106,6 +109,25 @@ public class Ace {
         VocabularyPrefs.setLevel(appContext, level);
     }
 
+    public boolean isMuted() {
+        return muted;
+    }
+
+    /** When muted, speak() is a no-op (but speakForTest() still works, to preview while deciding). */
+    public void setMuted(boolean muted) {
+        this.muted = muted;
+        AceSpeechPrefs.setMuted(appContext, muted);
+    }
+
+    public float getPitch() {
+        return AceSpeechPrefs.getPitch(appContext);
+    }
+
+    public void setPitch(float pitch) {
+        AceSpeechPrefs.setPitch(appContext, pitch);
+        if (tts != null) tts.setPitch(pitch);
+    }
+
     /** Initializes the TTS engine. Safe to call more than once. Does not touch the microphone. */
     public void init() {
         if (tts != null) return;
@@ -114,6 +136,7 @@ public class Ace {
             if (ttsReady) {
                 tts.setLanguage(Locale.US);
                 tts.setSpeechRate(1.0f);
+                tts.setPitch(AceSpeechPrefs.getPitch(appContext));
                 selectBestOnDeviceVoice();
                 if (listener != null) listener.onReady();
             } else {
@@ -178,8 +201,17 @@ public class Ace {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    /** Speaks the given text, interrupting anything currently being spoken. */
+    /** Speaks the given text, interrupting anything currently being spoken. No-op while muted. */
     public void speak(String text) {
+        if (muted) return;
+        speakForTest(text);
+    }
+
+    /**
+     * Bypasses mute — for a "hear a sample" preview button, so you can check
+     * how Ace sounds even while otherwise muted.
+     */
+    public void speakForTest(String text) {
         if (tts == null || !ttsReady || text == null || text.isEmpty()) return;
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, new Bundle(), UTTERANCE_ID);
     }
