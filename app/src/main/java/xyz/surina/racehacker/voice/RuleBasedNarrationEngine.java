@@ -71,9 +71,20 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
     // long after startup can mean a stuck-open thermostat.
     private static final float SLOW_WARMUP_THRESHOLD_F = 160f;
     private static final long WARMUP_GRACE_PERIOD_MS = 10 * 60 * 1000; // 10 min
+    // Bottom of the normal fully-warm operating band — crossing this is the
+    // positive counterpart to the slow-warmup check, not a warning.
+    private static final float OPERATING_TEMP_F = 185f;
+
+    // Cold-engine + aggressive-driving: a real risk right after startup, not
+    // something that needs the 10-minute grace period above — pushing a cold
+    // engine hard causes real wear regardless of whether it'll warm up fine
+    // given time.
+    private static final float COLD_ENGINE_THRESHOLD_F = 120f;
+    private static final float AGGRESSIVE_THROTTLE_PCT = 60f;
 
     private final Map<GaugeData.GaugeType, HistoryPoint> history = new HashMap<>();
     private Long engineStartedAtMs;
+    private boolean notifiedOperatingTempThisSession;
 
     @Override
     public String narrate(List<GaugeData> gauges, VocabularyLevel level) {
@@ -124,6 +135,9 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
         Verdict slowWarmup = checkSlowWarmup(gauges, basic, engineRunning, now);
         if (slowWarmup != null) return slowWarmup.message;
 
+        Verdict reachedTemp = checkReachedOperatingTemp(gauges, basic, engineRunning);
+        if (reachedTemp != null) return reachedTemp.message;
+
         return null;
     }
 
@@ -138,6 +152,7 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
         if (engineRunning && engineStartedAtMs == null) {
             engineStartedAtMs = now;
             history.remove(GaugeData.GaugeType.COOLANT_TEMP); // fresh session — don't compare across an off period
+            notifiedOperatingTempThisSession = false;
         } else if (!engineRunning) {
             engineStartedAtMs = null;
         }
@@ -162,6 +177,18 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
             return new Verdict(true, basic
                     ? "Your oil pressure's low and you're revving high at the same time — that's a dangerous mix for your engine's bearings. Ease off right now."
                     : "Low oil pressure at " + fmt(rpm.getCurrentValue()) + " RPM — bearing damage risk, ease off now.");
+        }
+
+        GaugeData coolant = find(gauges, GaugeData.GaugeType.COOLANT_TEMP);
+        GaugeData throttle = find(gauges, GaugeData.GaugeType.THROTTLE_POSITION);
+        if (coolant != null && coolant.hasData() && coolant.getCurrentValue() < COLD_ENGINE_THRESHOLD_F
+                && throttle != null && throttle.hasData() && throttle.getCurrentValue() >= AGGRESSIVE_THROTTLE_PCT) {
+            // A real wear risk right now, regardless of whether the engine will
+            // warm up fine given time — distinct from checkSlowWarmup() below,
+            // which is about the engine failing to warm up at all.
+            return new Verdict(false, basic
+                    ? "Hey, your engine's still cold — try to take it easy until it's warmed up."
+                    : "Aggressive throttle on a cold engine (coolant " + fmt(coolant.getCurrentValue()) + "°F) — ease in until it's warmed up.");
         }
 
         return null;
@@ -201,6 +228,21 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
             return new Verdict(false, basic
                     ? "Your engine's been running a while but still isn't warming up like it should — that can mean the thermostat's stuck open."
                     : "Coolant's still under " + (int) SLOW_WARMUP_THRESHOLD_F + "°F well after startup — possible stuck-open thermostat.");
+        }
+        return null;
+    }
+
+    /** Positive counterpart to checkSlowWarmup() — fires once per engine session. */
+    private Verdict checkReachedOperatingTemp(List<GaugeData> gauges, boolean basic, boolean engineRunning) {
+        if (!engineRunning || notifiedOperatingTempThisSession) return null;
+        GaugeData coolant = find(gauges, GaugeData.GaugeType.COOLANT_TEMP);
+        if (coolant == null || !coolant.hasData()) return null;
+
+        if (coolant.getCurrentValue() >= OPERATING_TEMP_F) {
+            notifiedOperatingTempThisSession = true;
+            return new Verdict(false, basic
+                    ? "Your engine's all warmed up now."
+                    : "Coolant's reached normal operating temperature.");
         }
         return null;
     }
