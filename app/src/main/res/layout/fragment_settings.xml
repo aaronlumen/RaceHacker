@@ -132,14 +132,17 @@
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="8dp" />
 
-        <ListView
+        <!-- RecyclerView, not ListView: a ListView nested inside this screen's outer
+             ScrollView only ever showed its first few rows and couldn't scroll to
+             reveal the rest (the ScrollView intercepts vertical touch before the
+             ListView sees it). Nested scrolling is disabled in code so the outer
+             ScrollView scrolls smoothly through the whole device list instead. -->
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/bluetooth_devices_list"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:background="@color/card_background"
-            android:divider="@color/racing_light_gray"
-            android:dividerHeight="1dp" />
+            android:background="@color/card_background" />
 
         <Button
             android:id="@+id/connect_button"
@@ -149,6 +152,138 @@
             android:layout_marginBottom="16dp"
             android:text="@string/connect_device"
             style="@style/RacingButton" />
+
+        <!-- Data logging -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="DATA LOGGING"
+            android:letterSpacing="0.1"
+            style="@style/RacingTextSubtitle" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:background="@color/racing_light_gray" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:background="@color/card_background">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Log sensor data to CSV"
+                style="@style/RacingTextBody" />
+
+            <Switch
+                android:id="@+id/data_logging_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/data_logging_status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="16dp"
+            android:text="Not logging"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+
+        <!-- Ace voice copilot -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="ACE"
+            android:letterSpacing="0.1"
+            style="@style/RacingTextSubtitle" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:background="@color/racing_light_gray" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/card_background">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Car enthusiast vocabulary\n(off = plain, simple explanations)"
+                style="@style/RacingTextBody" />
+
+            <Switch
+                android:id="@+id/ace_vocabulary_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/card_background">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mute Ace"
+                style="@style/RacingTextBody" />
+
+            <Switch
+                android:id="@+id/ace_mute_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Speech Pitch"
+            style="@style/RacingTextBody" />
+
+        <SeekBar
+            android:id="@+id/ace_pitch_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="150" />
+
+        <Button
+            android:id="@+id/ace_test_speech_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:text="Test Speech"
+            style="@style/RacingButtonSecondary" />
 
     </LinearLayout>
 

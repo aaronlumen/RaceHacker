@@ -19,12 +19,14 @@ import androidx.fragment.app.Fragment;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.ecu.EcuFlashManager;
+import xyz.surina.racehacker.voice.ActionRegistry;
 
 public class EcuFlashFragment extends Fragment {
     private static final int PICK_BIN_FILE = 1;
@@ -59,6 +61,33 @@ public class EcuFlashFragment extends Fragment {
         updateUI();
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().setScreenActions(Arrays.asList(
+                    ActionRegistry.action("Backing up your E C U.", this::backupEcu,
+                            "backup ecu", "backup the ecu", "backup rom", "back up my ecu"),
+                    ActionRegistry.action("Opening the file picker.", this::selectBinFile,
+                            "select file", "select bin file", "choose file", "pick a file"),
+                    // Flashing can brick an ECU — the app's own safety disclaimers call
+                    // this out, so it's the one action that requires a spoken "yes" first.
+                    ActionRegistry.confirmedAction("Flashing your E C U.", this::flashEcu,
+                            "flash ecu", "flash the ecu", "flash the tune", "flash it")
+            ));
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().clearScreenActions();
+        }
     }
 
     private void setupFlashManager() {

@@ -83,6 +83,8 @@ configuration.
   Nissan/Infiniti, Honda/Acura, Mitsubishi, Subaru, VW/Audi, and generic OBD2/diesel). Falls back
   to fetching a remote "plugin pack" profile by VIN prefix.
 - **Bluetooth device search** — live filter across paired adapters instead of a fixed list.
+- **CSV data logging** — logs every live gauge reading (timestamped) to a CSV file, toggled from
+  Settings or by voice ("start logging" / "stop logging"). Runs regardless of which tab is showing.
 - **Social login** — Google Sign-In (Firebase Auth) and Facebook Login, with a Skip option for
   local-only use; falls back to a guest session if unconfigured.
 - Carbon-fiber / checkered-flag racing UI theme.
@@ -101,13 +103,46 @@ in-process (no separate app install required):
 - **Simulator mode** — exercise every feature above with no adapter or vehicle attached.
 - Connects over Bluetooth, USB, or Wi-Fi.
 
+### Ace — voice copilot
+
+Fully on-device (Android's built-in `TextToSpeech` + `SpeechRecognizer` — no network calls, no
+new accounts), available from a mic FAB on every screen:
+
+- **Tap** the FAB for a spoken status narration of the live gauges.
+- **Long-press** to speak a command — Ace only ever listens in response to this explicit action,
+  never on its own.
+- **Anything a button can do, by voice** — navigate any tab, scan/auto-detect the vehicle,
+  read/clear codes, back up the ECU, load tuning presets, start/stop CSV logging. Consequential
+  actions (flashing the ECU, applying tuning) require a spoken "yes" before running.
+- **Voice-driven device connect** — "connect to BT12" matches the spoken name/address against the
+  currently scanned Bluetooth device list and connects, no tapping required.
+- **"What can you do?"** — lists navigable screens and the current screen's own commands, built
+  directly from what's actually registered so it can't drift out of sync.
+- **Two vocabulary levels** — BASIC (default, plain/jargon-free — "your fuel mixture's running a
+  bit thin") and ENTHUSIAST (real gauge names/units/numbers), toggled by a switch on Settings.
+- **Debounced proactive narration** — speaks up on its own for a real condition (e.g. "your
+  engine's running a little warm"), but a message identical to the last one spoken is suppressed
+  for 20 seconds so it can't turn into repeating itself every ~500ms poll tick.
+- **Diagnostic reasoning beyond static thresholds** — real-world battery-voltage interpretation
+  (running vs. resting), coolant rate-of-change and slow-warmup (possible stuck thermostat)
+  detection, and cross-sensor correlations (lean AFR + boost, low oil pressure + high RPM) that
+  escalate severity even when no single gauge alone has crossed its threshold. See
+  [SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md) for the full reasoning behind these, including an
+  explicit design principle: prefer under-reacting over false alarms.
+- **Launch greeting** — speaks one of several intro scripts on app open (20% faster than Ace's
+  normal speech rate), rotating so it isn't the same line every time.
+
+Ace's rule-based "brain" today (`RuleBasedNarrationEngine`, `RuleBasedCommandHandler`) is an
+explicit seam — see [DIAGNOSTIC_PLATFORM_VISION.md](DIAGNOSTIC_PLATFORM_VISION.md) for where this
+is headed (an on-device LLM, a real multi-vehicle diagnostic platform).
+
 ## Architecture
 
 Two Gradle modules in one project:
 
 | Module | Type | Package | Role |
 |---|---|---|---|
-| `:app` | `com.android.application` | `xyz.surina.proracingobd` | Racing dashboard, login, ECU flash/tuning — the installed app |
+| `:app` | `com.android.application` | `xyz.surina.racehacker` | Racing dashboard, login, ECU flash/tuning — the installed app |
 | `:carhackerkit` | `com.android.library` | `com.carhacker.kit` | Workshop diagnostics/security toolkit, consumed in-process by `:app` via `implementation project(':carhackerkit')` |
 
 `WorkshopActivity` in `:app` launches `com.carhacker.kit.ui.MainActivity` from the library
@@ -132,16 +167,19 @@ installed app.
 ## Project Structure
 
 ```
-app/src/main/java/xyz/surina/proracingobd/
+app/src/main/java/xyz/surina/racehacker/
 ├── activities/   (LoginActivity, ModeSelectActivity, MainActivity, WorkshopActivity)
-├── adapters/     (DtcAdapter, GaugeAdapter)
+├── adapters/     (DtcAdapter, GaugeAdapter, BluetoothDeviceAdapter)
 ├── auth/         (AuthManager, ProfileSyncService)
 ├── ecu/          (EcuFlashManager, TuningParameters)
 ├── fragments/    (DashboardFragment, DiagnosticsFragment, EcuFlashFragment, TuningFragment, SettingsFragment)
 ├── models/       (GaugeData)
 ├── services/     (DtcManager, EnhancedObdService, ObdConnectionService, PiresObdManager)
 ├── utils/        (DataLogger)
-└── vehicles/     (VehicleProfile)
+├── vehicles/     (VehicleProfile)
+└── voice/        (Ace, ActionRegistry, NarrationEngine + RuleBasedNarrationEngine,
+                    CommandHandler + RuleBasedCommandHandler, GaugeVocabulary,
+                    VocabularyLevel, VocabularyPrefs)
 
 carhackerkit/src/main/java/com/carhacker/kit/
 ├── CarHackerApp.kt
@@ -174,7 +212,7 @@ guest session automatically.
 ### Optional: social login setup
 
 1. [console.firebase.google.com](https://console.firebase.google.com) → create a project → add an
-   Android app with package `xyz.surina.proracingobd`.
+   Android app with package `xyz.surina.racehacker`.
 2. Download `google-services.json` → place in `app/`.
 3. Authentication → enable **Google** sign-in.
 4. Copy the **Web Client ID** → `app/src/main/res/values/strings.xml` → `google_web_client_id`.
@@ -221,12 +259,20 @@ seated in the OBD2 port with ignition on.
 | `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE` | Data logging (CSV), ECU ROM backup files |
 | `INTERNET` | Firebase Auth, profile sync, plugin-pack profile fetch |
 | `FOREGROUND_SERVICE`, `WAKE_LOCK` | Keep CAN/OBD monitoring alive during Workshop sessions |
+| `RECORD_AUDIO` | Ace's voice commands (only requested when you first long-press the mic FAB) |
 
 ## Documentation
 
 - **[PIRES_API_INTEGRATION.md](PIRES_API_INTEGRATION.md)** — the standard OBD2 PID reference (80+
   PIDs by category via the Pires OBD-Java API). This is a living document — proprietary
   manufacturer PID sets (starting with Harley-Davidson) are actively being added.
+- **[SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md)** — the design reference for Ace's diagnostic
+  narration: normal ranges, rate-of-change/correlation reasoning, and an explicit "avoid false
+  alarms" design principle, with a status column showing what's actually implemented vs. still
+  just documented.
+- **[DIAGNOSTIC_PLATFORM_VISION.md](DIAGNOSTIC_PLATFORM_VISION.md)** — the long-term vision for a
+  full multi-vehicle diagnostic platform (a real schema, a relationship-inference engine,
+  per-vehicle-class PID profiles). Not built — recorded so the vision survives as a spec.
 - **[ios-testkit/README.md](ios-testkit/README.md)** — unrelated macOS/Xcode shell scripts for
   iterating on a physical iPhone; not part of the Android app.
 
@@ -241,9 +287,13 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 
 ## Known Gaps
 
-- No custom launcher icon wired in yet (uses a placeholder system icon).
 - X, Snapchat, Instagram, Amazon, AutoZone login tiles are present in the UI but not yet wired up
   (Google and Facebook are functional).
+- Ace's narration/thresholds (battery voltage, coolant behavior) use generic constants, not
+  per-vehicle normal ranges — `VehicleProfile` has no threshold fields yet. See the "vehicle-aware
+  thresholds" gap in [SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md).
+- Oil temperature and oil pressure have gauge slots and narration rules, but no real PID data
+  behind them yet (`ObdConnectionService` doesn't poll them) — always show `--`.
 
 ---
 

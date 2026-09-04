@@ -1,6 +1,7 @@
 package xyz.surina.racehacker.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
@@ -29,10 +30,77 @@ import java.util.Arrays;
 
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.auth.AuthManager;
+import xyz.surina.racehacker.voice.Ace;
 
 public class LoginActivity extends AppCompatActivity {
 
     private static final int RC_GOOGLE_SIGN_IN = 100;
+
+    private static final String LAUNCH_PREFS = "race_hacking_launch_prefs";
+    private static final String KEY_LAUNCH_COUNT = "launch_count";
+    private static final String DEDICATION = " This one's dedicated to David and Andrew.";
+
+    // The very first launch ever gets the full, original intro (the complete
+    // feature rundown + donation pitch). Every launch after that rotates
+    // through the shorter WELCOME_GREETINGS below instead.
+    private static final String FIRST_LAUNCH_GREETING =
+            "Welcome to Race Hacking — your all-in-one toolkit for taking on the competition. "
+            + "Clearing engine codes, O-B-D-2 diagnostics, E-C-U programming, stage one through "
+            + "stage four tuning — we've got you covered. And hey, the other guys charge an arm "
+            + "and a leg for this. If we're saving you some money, toss a few bucks our way — "
+            + "it keeps this thing running faster and longer than they ever will.";
+
+    // Spoken on every launch after the first, before any sign-in/skip navigation
+    // (so it plays on the common auto-skip path too). Rotates through 5 variants
+    // by launch count so it isn't the same line every time.
+    private static final String[] WELCOME_GREETINGS = {
+            // 1. S3 — Race Mode
+            "Welcome to S3 — Surina 3. This isn't just another OBD scanner. S3 puts advanced "
+                    + "ECU diagnostics, live telemetry, tuning analysis, sensor intelligence, and "
+                    + "vehicle learning tools in your hands. From street cars to race builds, "
+                    + "diesel torque monsters to high-performance motorcycles — S3 helps you "
+                    + "understand what your machine is actually doing. Connect. Analyze. Learn. "
+                    + "Tune. S3. Know your machine.",
+            // 2. S3 — The Machine Learns
+            "S3 online. Your vehicle has thousands of signals running through its electronic "
+                    + "systems. S3 turns those signals into knowledge. Monitor sensors in real "
+                    + "time. Map ECU behavior. Compare commanded versus actual values. Discover "
+                    + "patterns. Learn how your engine, transmission, fuel, boost, ignition, and "
+                    + "emissions systems work together. Whether you're building a daily driver, "
+                    + "a diesel powerhouse, or a track weapon — S3 gives you the tools to learn "
+                    + "what your vehicle is telling you. Surina 3. Data in. Performance out.",
+            // 3. S3 — Full Send
+            "Ignition on. ECU connected. Welcome to S3. Live data. Advanced diagnostics. "
+                    + "Performance telemetry. ECU analysis. Sensor correlation. Vehicle learning. "
+                    + "From Harley baggers to superbikes. From turbo imports to German "
+                    + "performance machines. From Cummins and Power Stroke diesels to full race "
+                    + "builds. S3 doesn't just show you numbers. It teaches you what the numbers "
+                    + "mean. Push your knowledge. Understand your machine. S3 — built for people "
+                    + "who want to know what's under the hood.",
+            // 4. S3 — Engineering Mode
+            "Welcome to S3 Engineering Mode. Every RPM tells a story. Every pressure, "
+                    + "temperature, timing value, fuel correction, throttle movement, and sensor "
+                    + "response adds another piece to the puzzle. S3 gives you an advanced "
+                    + "environment for exploring that data — with live monitoring, diagnostics, "
+                    + "performance analysis, ECU learning, and cross-system correlation. Start "
+                    + "with a sensor. Follow the data. Understand the system. Then build smarter. "
+                    + "S3 — Surina 3. Where vehicle data becomes knowledge.",
+            // 5. S3 — Cinematic / Premium
+            "This is S3. Not just a scanner. Not just a code reader. A complete vehicle "
+                    + "intelligence platform. Real-time ECU data. Advanced diagnostics. "
+                    + "Performance monitoring. Sensor analytics. Tuning education. System "
+                    + "correlation. And tools designed to help you understand virtually every "
+                    + "signal your vehicle makes available. Cars. Trucks. Diesels. Motorcycles. "
+                    + "Performance machines. Your vehicle is already talking. S3 gives you the "
+                    + "language. Surina 3 — connect to the machine.",
+    };
+
+    // Not present in any of the 5 scripts above, so it's appended separately —
+    // still fires every 5th launch, on top of whichever script plays that time.
+    private static final String DONATION_PITCH =
+            "And hey — the other guys charge an arm and a leg for this. If we're saving you "
+            + "some money, toss a few bucks our way — it keeps this thing running faster and "
+            + "longer than they ever will.";
 
     private FirebaseAuth firebaseAuth;
     private GoogleSignInClient googleSignInClient;
@@ -41,6 +109,8 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        playWelcomeGreeting();
 
         // Already signed in — skip straight to the app
         firebaseAuth = FirebaseAuth.getInstance();
@@ -55,6 +125,50 @@ public class LoginActivity extends AppCompatActivity {
         setupFacebookSignIn();
         setupSocialMosaicTiles();
         setupSkipButton();
+    }
+
+    // ── Ace's welcome greeting ────────────────────────────────────────────────
+
+    /**
+     * Speaks a one-time welcome when the app opens. Purely one-way — Ace never
+     * listens for a reply here; the user has to explicitly ask to talk to Ace
+     * later (long-press the mic button) if they want to.
+     */
+    // 20% faster than normal — only for the launch greeting, not Ace's regular
+    // in-app speech (which stays at the default rate).
+    private static final float GREETING_SPEECH_RATE = 1.2f;
+
+    private void playWelcomeGreeting() {
+        String greeting = nextWelcomeGreeting();
+        Ace greeter = new Ace(this, null);
+        greeter.setListener(new Ace.Listener() {
+            @Override public void onSpeechRecognized(String text) {}
+            @Override public void onSpeechError(String message) {}
+            @Override public void onReady() {
+                greeter.setSpeechRate(GREETING_SPEECH_RATE);
+                greeter.speak(greeting);
+            }
+        });
+        greeter.init();
+    }
+
+    /**
+     * First launch ever gets FIRST_LAUNCH_GREETING; every launch after that
+     * rotates through WELCOME_GREETINGS. Persisted across app restarts.
+     */
+    private String nextWelcomeGreeting() {
+        SharedPreferences prefs = getSharedPreferences(LAUNCH_PREFS, MODE_PRIVATE);
+        int count = prefs.getInt(KEY_LAUNCH_COUNT, 0) + 1;
+        prefs.edit().putInt(KEY_LAUNCH_COUNT, count).apply();
+
+        String greeting = (count == 1)
+                ? FIRST_LAUNCH_GREETING
+                : WELCOME_GREETINGS[(count - 2) % WELCOME_GREETINGS.length];
+
+        if (count % 5 == 0) {
+            greeting += " " + DONATION_PITCH;
+        }
+        return greeting + DEDICATION;
     }
 
     // ── Google ──────────────────────────────────────────────────────────────

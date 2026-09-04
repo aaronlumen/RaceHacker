@@ -1,5 +1,6 @@
 package xyz.surina.racehacker.services;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
@@ -9,6 +10,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 import xyz.surina.racehacker.vehicles.VehicleProfile;
@@ -27,6 +29,10 @@ public class ObdConnectionService {
     private boolean isPidPolling = false;
     private Handler mainHandler;
 
+    // Stashed by queryBoostPsi() so the raw MAP reading it already fetches
+    // (PID 010B) can be exposed as its own gauge without a second query.
+    private float lastMapKpa;
+
     // ─── Listener interfaces ────────────────────────────────────────────────
 
     public interface ConnectionListener {
@@ -40,7 +46,8 @@ public class ObdConnectionService {
         void onSensorData(float rpm, float speedMph, float coolantTempF,
                           float intakeTempF, float throttlePct,
                           float boostPsi, float batteryV,
-                          float timingDeg, float fuelLevelPct, float afr);
+                          float timingDeg, float fuelLevelPct, float afr,
+                          float mapKpa, float mafGps);
     }
 
     // ─── Constructor ────────────────────────────────────────────────────────
@@ -63,8 +70,9 @@ public class ObdConnectionService {
     public void connect(BluetoothDevice device) {
         new Thread(() -> {
             try {
-                socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
-                socket.connect();
+                cancelDiscoveryIfActive();
+
+                socket = connectSocket(device);
                 inputStream = socket.getInputStream();
                 outputStream = socket.getOutputStream();
 
@@ -83,6 +91,61 @@ public class ObdConnectionService {
                 disconnect();
             }
         }).start();
+    }
+
+    /**
+     * An in-progress Bluetooth discovery (device scan) drastically slows down,
+     * and can outright break, RFCOMM socket setup — a well-documented Android
+     * gotcha. Never harmful to call even if nothing is scanning. Swallows any
+     * SecurityException (missing BLUETOOTH_SCAN on Android 12+) rather than
+     * letting it crash the connect attempt — worst case we just skip this and
+     * proceed straight to connecting.
+     */
+    private void cancelDiscoveryIfActive() {
+        try {
+            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+            if (adapter != null && adapter.isDiscovering()) {
+                adapter.cancelDiscovery();
+            }
+        } catch (SecurityException e) {
+            Log.w(TAG, "Could not check/cancel discovery (missing permission?)", e);
+        }
+    }
+
+    /**
+     * Standard SPP-UUID RFCOMM connect first — works when the adapter properly
+     * advertises SDP records. Many ELM327 clones don't, and Android's SDP-based
+     * connect then fails or times out even though a raw RFCOMM channel 1
+     * connection would work fine. This is exactly why mature OBD apps (e.g.
+     * Torque) fall back to a raw channel via reflection when the standard path
+     * fails, rather than giving up — so this does too.
+     */
+    private BluetoothSocket connectSocket(BluetoothDevice device) throws IOException {
+        try {
+            BluetoothSocket s = device.createRfcommSocketToServiceRecord(SPP_UUID);
+            s.connect();
+            return s;
+        } catch (IOException e) {
+            Log.w(TAG, "Standard SPP connect failed, falling back to raw RFCOMM channel 1", e);
+            BluetoothSocket fallback = createRfcommSocketChannel1(device);
+            fallback.connect();
+            return fallback;
+        }
+    }
+
+    /**
+     * BluetoothDevice doesn't publicly expose "connect to a specific RFCOMM
+     * channel" (only "connect via SDP lookup of a UUID") — channel 1 is
+     * reached via the hidden createRfcommSocket(int) method instead, the same
+     * long-standing workaround other Android OBD/SPP clients use.
+     */
+    private BluetoothSocket createRfcommSocketChannel1(BluetoothDevice device) throws IOException {
+        try {
+            Method m = device.getClass().getMethod("createRfcommSocket", int.class);
+            return (BluetoothSocket) m.invoke(device, 1);
+        } catch (Exception reflectionError) {
+            throw new IOException("Raw RFCOMM channel 1 connect unavailable: " + reflectionError.getMessage());
+        }
     }
 
     private void initializeObd() throws IOException, InterruptedException {
@@ -208,12 +271,14 @@ public class ObdConnectionService {
                     float timing     = queryTiming();
                     float fuelLevel  = queryFuelLevel();
                     float afr        = queryAfr();
+                    float mapKpa     = lastMapKpa; // set by queryBoostPsi() above
+                    float mafGps     = queryMaf();
 
                     if (dataListener != null) {
                         mainHandler.post(() -> dataListener.onSensorData(
                                 rpm, speedMph, coolantF, intakeF,
                                 throttle, boostPsi, battery, timing,
-                                fuelLevel, afr));
+                                fuelLevel, afr, mapKpa, mafGps));
                     }
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
@@ -327,9 +392,18 @@ public class ObdConnectionService {
     private float queryBoostPsi() {
         try {
             float map  = parseByte1(sendAndReceive("010B"), "0B");
+            lastMapKpa = map;
             float baro = parseByte1(sendAndReceive("0133"), "33");
             float boostKpa = map - baro;
             return boostKpa * 0.145038f;
+        } catch (Exception e) { return 0; }
+    }
+
+    /** MAF — mass air flow: PID 0110 → (A*256+B)/100 g/s */
+    private float queryMaf() {
+        try {
+            String r = sendAndReceive("0110");
+            return parseByteAB(r, "10", (a, b) -> (a * 256f + b) / 100f);
         } catch (Exception e) { return 0; }
     }
 
