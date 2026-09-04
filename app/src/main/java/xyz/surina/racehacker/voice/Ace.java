@@ -163,6 +163,16 @@ public class Ace {
         }
     }
 
+    /**
+     * Overrides the TTS speech rate (1.0 = normal). Meant for callers with a
+     * specific need (e.g. LoginActivity speeding up just the launch greeting)
+     * — the shared Ace instance used for regular in-app speech should stay at
+     * the default rate set in {@link #init()}.
+     */
+    public void setSpeechRate(float rate) {
+        if (tts != null) tts.setSpeechRate(rate);
+    }
+
     public boolean hasMicPermission() {
         return ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED;
@@ -273,20 +283,24 @@ public class Ace {
      */
     public void handleCommand(String spokenText, List<GaugeData> currentGauges) {
         String textLower = spokenText == null ? "" : spokenText.toLowerCase(Locale.US).trim();
+        Log.i(TAG, "Recognized: \"" + spokenText + "\"");
 
         if (pendingConfirmation != null) {
             ActionRegistry.Entry toRun = pendingConfirmation;
             pendingConfirmation = null;
             if (isAffirmative(textLower)) {
+                Log.i(TAG, "-> confirmed pending action: " + toRun.label);
                 speak(toRun.label);
                 toRun.action.run();
             } else {
+                Log.i(TAG, "-> pending action cancelled");
                 speak("Okay, cancelled.");
             }
             return;
         }
 
         if (isCapabilityQuestion(textLower)) {
+            Log.i(TAG, "-> matched capability question");
             speak(describeCapabilities());
             return;
         }
@@ -294,6 +308,7 @@ public class Ace {
         if (actionRegistry != null) {
             ActionRegistry.Entry matched = actionRegistry.find(textLower);
             if (matched != null) {
+                Log.i(TAG, "-> matched ActionRegistry entry: " + matched.label);
                 if (matched.confirm) {
                     pendingConfirmation = matched;
                     speak("Are you sure? Say yes to confirm.");
@@ -305,6 +320,7 @@ public class Ace {
             }
         }
 
+        Log.i(TAG, "-> no match, falling through to CommandHandler");
         String reply = commandHandler.handle(spokenText, currentGauges, narrationEngine, vocabularyLevel);
         speak(reply);
     }
@@ -312,7 +328,11 @@ public class Ace {
     private boolean isCapabilityQuestion(String textLower) {
         return textLower.contains("what screens") || textLower.contains("what can you do")
                 || textLower.contains("what can i say") || textLower.contains("what can i ask")
-                || textLower.equals("help") || textLower.contains("what commands");
+                || textLower.equals("help") || textLower.contains("what commands")
+                // Unspecific nav requests ("open a screen for me") — instead of a flat
+                // "I don't know how to do that", point at the actual screen names.
+                || textLower.contains("open a screen") || textLower.contains("switch screen")
+                || textLower.contains("change screen") || textLower.contains("which screen");
     }
 
     /**
