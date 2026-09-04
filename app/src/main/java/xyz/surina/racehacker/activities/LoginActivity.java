@@ -43,7 +43,8 @@ public class LoginActivity extends AppCompatActivity {
             + "Clearing engine codes, O-B-D-2 diagnostics, E-C-U programming, stage one through "
             + "stage four tuning — we've got you covered. And hey, the other guys charge an arm "
             + "and a leg for this. If we're saving you some money, toss a few bucks our way — "
-            + "it keeps this thing running faster and longer than they ever will.";
+            + "it keeps this thing running faster and longer than they ever will. "
+            + "This one's dedicated to David and Andrew.";
 
     private FirebaseAuth firebaseAuth;
     private GoogleSignInClient googleSignInClient;
