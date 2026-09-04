@@ -306,6 +306,13 @@ public class Ace {
         }
 
         if (actionRegistry != null) {
+            String prefixReply = actionRegistry.tryPrefixAction(textLower);
+            if (prefixReply != null) {
+                Log.i(TAG, "-> matched prefix action: " + prefixReply);
+                speak(prefixReply);
+                return;
+            }
+
             ActionRegistry.Entry matched = actionRegistry.find(textLower);
             if (matched != null) {
                 Log.i(TAG, "-> matched ActionRegistry entry: " + matched.label);
@@ -326,9 +333,13 @@ public class Ace {
     }
 
     private boolean isCapabilityQuestion(String textLower) {
-        return textLower.contains("what screens") || textLower.contains("what can you do")
+        // "commands" / "help" are the primary keywords for this; "what ..." only
+        // triggers it for the specific phrasings below, not just any question
+        // starting with "what" — a "what" question Ace has a real answer for
+        // (e.g. "what's my RPM") should reach that answer, not this listing.
+        return textLower.contains("commands") || textLower.contains("help")
+                || textLower.contains("what screens") || textLower.contains("what can you do")
                 || textLower.contains("what can i say") || textLower.contains("what can i ask")
-                || textLower.equals("help") || textLower.contains("what commands")
                 // Unspecific nav requests ("open a screen for me") — instead of a flat
                 // "I don't know how to do that", point at the actual screen names.
                 || textLower.contains("open a screen") || textLower.contains("switch screen")

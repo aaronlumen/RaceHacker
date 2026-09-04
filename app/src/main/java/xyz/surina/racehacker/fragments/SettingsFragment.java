@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import xyz.surina.racehacker.R;
@@ -101,6 +102,9 @@ public class SettingsFragment extends Fragment {
                             "scan for devices", "scan", "find devices"),
                     ActionRegistry.action("Reading your VIN.", this::autoDetectVehicle,
                             "auto detect vehicle", "auto-detect vehicle", "detect vin", "find my vehicle")
+            ));
+            main.getActionRegistry().setScreenPrefixActions(Arrays.asList(
+                    ActionRegistry.prefixAction(this::connectByVoice, "connect to ", "connect ")
             ));
         }
     }
@@ -284,20 +288,51 @@ public class SettingsFragment extends Fragment {
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        MainActivity mainActivity = (MainActivity) getActivity();
-        if (mainActivity != null) {
-            mainActivity.connectToDevice(selectedDevice);
-            connectButton.setEnabled(false);
-            connectButton.setText("Connecting...");
+        performConnect(selectedDevice);
+    }
 
-            new android.os.Handler().postDelayed(() -> {
-                if (connectButton != null) {
-                    connectButton.setEnabled(true);
-                    connectButton.setText("Connect");
-                    updateConnectionStatus();
-                }
-            }, 3000);
+    /** Shared by the Connect button and connectByVoice() so both go through the same flow. */
+    private void performConnect(BluetoothDevice device) {
+        MainActivity mainActivity = (MainActivity) getActivity();
+        if (mainActivity == null) return;
+        mainActivity.connectToDevice(device);
+        connectButton.setEnabled(false);
+        connectButton.setText("Connecting...");
+
+        new android.os.Handler().postDelayed(() -> {
+            if (connectButton != null) {
+                connectButton.setEnabled(true);
+                connectButton.setText("Connect");
+                updateConnectionStatus();
+            }
+        }, 3000);
+    }
+
+    /**
+     * Voice-driven device connect ("connect to BT12", "connect to OBDII") — matches
+     * the spoken remainder against the currently scanned device list's names/
+     * addresses (substring, case-insensitive) and connects on a match.
+     *
+     * @return what Ace should speak, or null to defer (empty query — e.g. just
+     *         "connect" with nothing after — isn't this feature's to handle).
+     */
+    @SuppressWarnings("MissingPermission") // BLUETOOTH_CONNECT already requested by MainActivity
+    private String connectByVoice(String query) {
+        if (query.isEmpty()) return null;
+        if (deviceList.isEmpty()) {
+            return "I don't have any devices to connect to yet — say \"scan for devices\" first.";
         }
+        for (BluetoothDevice device : deviceList) {
+            String name = device.getName();
+            String haystack = ((name != null ? name : "") + " " + device.getAddress()).toLowerCase(Locale.US);
+            if (haystack.contains(query)) {
+                selectedDevice = device;
+                devicesAdapter.setSelectedDevice(device);
+                performConnect(device);
+                return "Connecting to " + (name != null ? name : device.getAddress()) + ".";
+            }
+        }
+        return "I couldn't find a paired device matching \"" + query + "\".";
     }
 
     private void updateVehicleProfile() {
