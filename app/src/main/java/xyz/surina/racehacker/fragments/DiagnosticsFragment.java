@@ -14,12 +14,14 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Arrays;
 import java.util.List;
 
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.adapters.DtcAdapter;
 import xyz.surina.racehacker.services.DtcManager;
+import xyz.surina.racehacker.voice.ActionRegistry;
 
 public class DiagnosticsFragment extends Fragment {
     private RecyclerView dtcRecyclerView;
@@ -47,6 +49,29 @@ public class DiagnosticsFragment extends Fragment {
         setupButtons();
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().setScreenActions(Arrays.asList(
+                    ActionRegistry.action("Reading codes.", this::readDtcCodes,
+                            "read codes", "check codes", "check engine codes", "read the codes"),
+                    ActionRegistry.action("Clearing codes.", this::clearDtcCodes,
+                            "clear codes", "clear the codes", "reset codes", "reset the codes")
+            ));
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().clearScreenActions();
+        }
     }
 
     private void setupDtcManager() {

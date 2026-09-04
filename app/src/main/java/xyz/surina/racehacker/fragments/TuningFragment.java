@@ -14,9 +14,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import java.util.Arrays;
+
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.ecu.TuningParameters;
+import xyz.surina.racehacker.voice.ActionRegistry;
 
 public class TuningFragment extends Fragment {
     private TuningParameters tuningParams;
@@ -54,6 +57,36 @@ public class TuningFragment extends Fragment {
         updateDisplayValues();
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().setScreenActions(Arrays.asList(
+                    ActionRegistry.action("Conservative tune loaded.", this::applyConservativePreset,
+                            "conservative tune", "conservative preset"),
+                    ActionRegistry.action("Street tune loaded.", this::applyStreetPreset,
+                            "street tune", "street preset"),
+                    ActionRegistry.action("Aggressive tune loaded.", this::applyAggressivePreset,
+                            "aggressive tune", "aggressive preset"),
+                    ActionRegistry.action("Race tune loaded.", this::applyRacePreset,
+                            "race tune", "race preset"),
+                    // Pushes real parameters to the ECU — confirm before doing it by voice.
+                    ActionRegistry.confirmedAction("Applying tuning.", this::applyTuning,
+                            "apply tuning", "apply the tune", "apply tune")
+            ));
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().clearScreenActions();
+        }
     }
 
     private void initializeViews(View view) {
@@ -136,31 +169,38 @@ public class TuningFragment extends Fragment {
     }
 
     private void setupPresets() {
-        conservativePreset.setOnClickListener(v -> {
-            tuningParams.applyConservativeTune();
-            updateDisplayValues();
-            Toast.makeText(getContext(), "Conservative tune loaded", Toast.LENGTH_SHORT).show();
-        });
-
-        streetPreset.setOnClickListener(v -> {
-            tuningParams.applyStreetTune();
-            updateDisplayValues();
-            Toast.makeText(getContext(), "Street tune loaded", Toast.LENGTH_SHORT).show();
-        });
-
-        aggressivePreset.setOnClickListener(v -> {
-            tuningParams.applyAggressiveTune();
-            updateDisplayValues();
-            Toast.makeText(getContext(), "Aggressive tune loaded", Toast.LENGTH_SHORT).show();
-        });
-
-        racePreset.setOnClickListener(v -> {
-            tuningParams.applyRaceTune();
-            updateDisplayValues();
-            Toast.makeText(getContext(), "Race tune loaded", Toast.LENGTH_SHORT).show();
-        });
-
+        conservativePreset.setOnClickListener(v -> applyConservativePreset());
+        streetPreset.setOnClickListener(v -> applyStreetPreset());
+        aggressivePreset.setOnClickListener(v -> applyAggressivePreset());
+        racePreset.setOnClickListener(v -> applyRacePreset());
         applyButton.setOnClickListener(v -> applyTuning());
+    }
+
+    // Extracted so both the on-screen buttons and Ace's ActionRegistry entries
+    // (see onResume) run the exact same code.
+
+    private void applyConservativePreset() {
+        tuningParams.applyConservativeTune();
+        updateDisplayValues();
+        Toast.makeText(getContext(), "Conservative tune loaded", Toast.LENGTH_SHORT).show();
+    }
+
+    private void applyStreetPreset() {
+        tuningParams.applyStreetTune();
+        updateDisplayValues();
+        Toast.makeText(getContext(), "Street tune loaded", Toast.LENGTH_SHORT).show();
+    }
+
+    private void applyAggressivePreset() {
+        tuningParams.applyAggressiveTune();
+        updateDisplayValues();
+        Toast.makeText(getContext(), "Aggressive tune loaded", Toast.LENGTH_SHORT).show();
+    }
+
+    private void applyRacePreset() {
+        tuningParams.applyRaceTune();
+        updateDisplayValues();
+        Toast.makeText(getContext(), "Race tune loaded", Toast.LENGTH_SHORT).show();
     }
 
     private void updateDisplayValues() {

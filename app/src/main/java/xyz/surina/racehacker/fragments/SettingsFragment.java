@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,12 +24,15 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
+import xyz.surina.racehacker.voice.ActionRegistry;
+import xyz.surina.racehacker.voice.VocabularyLevel;
 
 public class SettingsFragment extends Fragment {
     private Spinner vehicleTypeSpinner;
@@ -39,6 +43,7 @@ public class SettingsFragment extends Fragment {
     private Button autoDetectButton;
     private TextView connectionStatusText;
     private EditText deviceSearchField;
+    private Switch aceVocabularySwitch;
 
     private BluetoothAdapter bluetoothAdapter;
     private List<BluetoothDevice> deviceList = new ArrayList<>();
@@ -60,6 +65,7 @@ public class SettingsFragment extends Fragment {
         connectButton = view.findViewById(R.id.connect_button);
         connectionStatusText = view.findViewById(R.id.connection_status_text);
         deviceSearchField = view.findViewById(R.id.device_search_field);
+        aceVocabularySwitch = view.findViewById(R.id.ace_vocabulary_switch);
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -68,9 +74,42 @@ public class SettingsFragment extends Fragment {
         setupBluetoothDevicesList();
         setupDeviceSearch();
         setupButtons();
+        setupAceVocabularySwitch();
         updateConnectionStatus();
 
         return view;
+    }
+
+    private void setupAceVocabularySwitch() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || main.getAce() == null) return;
+
+        aceVocabularySwitch.setChecked(main.getAce().getVocabularyLevel() == VocabularyLevel.ENTHUSIAST);
+        aceVocabularySwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
+                main.getAce().setVocabularyLevel(isChecked ? VocabularyLevel.ENTHUSIAST : VocabularyLevel.BASIC));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().setScreenActions(Arrays.asList(
+                    ActionRegistry.action("Scanning for devices.", this::scanForDevices,
+                            "scan for devices", "scan", "find devices"),
+                    ActionRegistry.action("Reading your VIN.", this::autoDetectVehicle,
+                            "auto detect vehicle", "auto-detect vehicle", "detect vin", "find my vehicle")
+            ));
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        MainActivity main = (MainActivity) getActivity();
+        if (main != null) {
+            main.getActionRegistry().clearScreenActions();
+        }
     }
 
     private void setupVehicleTypeSpinner() {

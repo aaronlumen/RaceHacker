@@ -26,18 +26,27 @@ import xyz.surina.racehacker.models.GaugeData;
  * "brain" (rule-based today, an on-device LLM later) can be swapped without
  * touching this class or its callers.
  *
+ * Ace never starts listening on its own — {@link #init()} only sets up
+ * speech output. The user has to explicitly ask to talk (e.g. long-press the
+ * mic button, which calls {@link #startListening()}).
+ *
+ * Button/navigation commands are resolved first against an {@link ActionRegistry}
+ * (so Ace can do anything a button on screen can do); anything else falls
+ * through to {@link CommandHandler}.
+ *
  * Fully on-device: Android's built-in TTS/SpeechRecognizer, no network calls,
  * no new accounts. Caller must hold RECORD_AUDIO before calling
  * {@link #startListening()} — check {@link #hasMicPermission()} first.
  *
- * Lifecycle: call {@link #init()} once the owning Fragment/Activity's view is
- * ready, and {@link #shutdown()} from onDestroyView/onDestroy to release the
- * TTS engine and recognizer.
+ * Lifecycle: call {@link #init()} once the owning Activity's view is ready,
+ * and {@link #shutdown()} from onDestroy to release the TTS engine and
+ * recognizer. Ace is meant to be owned once by MainActivity (not
+ * re-created per fragment) so it persists across tab switches.
  */
 public class Ace {
 
     private static final String TAG = "Ace";
-    private static final String UTTERANCE_ID = "voice_copilot";
+    private static final String UTTERANCE_ID = "ace";
 
     public interface Listener {
         /** Final recognized text for what was said. */
@@ -46,32 +55,48 @@ public class Ace {
         void onSpeechError(String message);
         /** TTS started/stopped speaking — handy for e.g. animating the mic button. */
         default void onSpeakingStateChanged(boolean speaking) {}
+        /** TTS engine finished initializing and {@link #speak} can now be used. */
+        default void onReady() {}
     }
 
     private final Context appContext;
     private final NarrationEngine narrationEngine;
     private final CommandHandler commandHandler;
+    private final ActionRegistry actionRegistry;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
     private SpeechRecognizer speechRecognizer;
     private Listener listener;
+    private VocabularyLevel vocabularyLevel;
+    private ActionRegistry.Entry pendingConfirmation;
 
-    public Ace(Context context) {
-        this(context, new RuleBasedNarrationEngine(), new RuleBasedCommandHandler());
+    public Ace(Context context, ActionRegistry actionRegistry) {
+        this(context, new RuleBasedNarrationEngine(), new RuleBasedCommandHandler(), actionRegistry);
     }
 
-    public Ace(Context context, NarrationEngine narrationEngine, CommandHandler commandHandler) {
+    public Ace(Context context, NarrationEngine narrationEngine, CommandHandler commandHandler, ActionRegistry actionRegistry) {
         this.appContext = context.getApplicationContext();
         this.narrationEngine = narrationEngine;
         this.commandHandler = commandHandler;
+        this.actionRegistry = actionRegistry;
+        this.vocabularyLevel = VocabularyPrefs.getLevel(appContext);
     }
 
     public void setListener(Listener listener) {
         this.listener = listener;
     }
 
-    /** Initializes the TTS engine. Safe to call more than once. */
+    public VocabularyLevel getVocabularyLevel() {
+        return vocabularyLevel;
+    }
+
+    public void setVocabularyLevel(VocabularyLevel level) {
+        this.vocabularyLevel = level;
+        VocabularyPrefs.setLevel(appContext, level);
+    }
+
+    /** Initializes the TTS engine. Safe to call more than once. Does not touch the microphone. */
     public void init() {
         if (tts != null) return;
         tts = new TextToSpeech(appContext, status -> {
@@ -79,6 +104,7 @@ public class Ace {
             if (ttsReady) {
                 tts.setLanguage(Locale.US);
                 tts.setSpeechRate(1.0f);
+                if (listener != null) listener.onReady();
             } else {
                 Log.w(TAG, "TextToSpeech init failed, status=" + status);
             }
@@ -107,15 +133,17 @@ public class Ace {
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, new Bundle(), UTTERANCE_ID);
     }
 
-    /** Speaks a narration of the given live gauge readings. */
+    /** Speaks a narration of the given live gauge readings, at the current vocabulary level. */
     public void speakStatus(List<GaugeData> gauges) {
-        speak(narrationEngine.narrate(gauges));
+        speak(narrationEngine.narrate(gauges, vocabularyLevel));
     }
 
     /**
-     * Starts listening for one spoken command. Requires RECORD_AUDIO to
-     * already be granted; on missing permission or an unavailable recognizer
-     * this reports via {@link Listener#onSpeechError}, it does not throw.
+     * Starts listening for one spoken command. Only ever called explicitly by
+     * the user (e.g. long-pressing the mic button) — Ace never listens on its
+     * own. Requires RECORD_AUDIO to already be granted; on missing permission
+     * or an unavailable recognizer this reports via
+     * {@link Listener#onSpeechError}, it does not throw.
      */
     public void startListening() {
         if (!SpeechRecognizer.isRecognitionAvailable(appContext)) {
@@ -160,10 +188,49 @@ public class Ace {
         }
     }
 
-    /** Routes recognized speech to the command handler and speaks the reply. */
+    /**
+     * Routes recognized speech: first to a pending "are you sure?" confirmation
+     * if one is outstanding, then to the {@link ActionRegistry} (anything a
+     * button on screen can do — navigation, scans, flashing, tuning presets,
+     * ...), then to {@link CommandHandler} for everything else. Always speaks
+     * a reply.
+     */
     public void handleCommand(String spokenText, List<GaugeData> currentGauges) {
-        String reply = commandHandler.handle(spokenText, currentGauges, narrationEngine);
+        String textLower = spokenText == null ? "" : spokenText.toLowerCase(Locale.US).trim();
+
+        if (pendingConfirmation != null) {
+            ActionRegistry.Entry toRun = pendingConfirmation;
+            pendingConfirmation = null;
+            if (isAffirmative(textLower)) {
+                speak(toRun.label);
+                toRun.action.run();
+            } else {
+                speak("Okay, cancelled.");
+            }
+            return;
+        }
+
+        if (actionRegistry != null) {
+            ActionRegistry.Entry matched = actionRegistry.find(textLower);
+            if (matched != null) {
+                if (matched.confirm) {
+                    pendingConfirmation = matched;
+                    speak("Are you sure? Say yes to confirm.");
+                } else {
+                    speak(matched.label);
+                    matched.action.run();
+                }
+                return;
+            }
+        }
+
+        String reply = commandHandler.handle(spokenText, currentGauges, narrationEngine, vocabularyLevel);
         speak(reply);
+    }
+
+    private boolean isAffirmative(String textLower) {
+        return textLower.contains("yes") || textLower.contains("yeah") || textLower.contains("confirm")
+                || textLower.contains("do it") || textLower.contains("go ahead");
     }
 
     private String describeError(int error) {
@@ -182,7 +249,7 @@ public class Ace {
         }
     }
 
-    /** Releases the TTS engine and SpeechRecognizer. Call from onDestroyView/onDestroy. */
+    /** Releases the TTS engine and SpeechRecognizer. Call from onDestroy. */
     public void shutdown() {
         if (tts != null) {
             tts.stop();

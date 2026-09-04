@@ -29,10 +29,21 @@ import java.util.Arrays;
 
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.auth.AuthManager;
+import xyz.surina.racehacker.voice.Ace;
 
 public class LoginActivity extends AppCompatActivity {
 
     private static final int RC_GOOGLE_SIGN_IN = 100;
+
+    // Spoken once per app launch, before any sign-in/skip navigation, so it plays
+    // whether this is a first sign-in or the common case (auto-skip via the local
+    // guest session). Not verbatim to any single script — just the spirit of it.
+    private static final String WELCOME_GREETING =
+            "Welcome to Race Hacking — your all-in-one toolkit for taking on the competition. "
+            + "Clearing engine codes, O-B-D-2 diagnostics, E-C-U programming, stage one through "
+            + "stage four tuning — we've got you covered. And hey, the other guys charge an arm "
+            + "and a leg for this. If we're saving you some money, toss a few bucks our way — "
+            + "it keeps this thing running faster and longer than they ever will.";
 
     private FirebaseAuth firebaseAuth;
     private GoogleSignInClient googleSignInClient;
@@ -41,6 +52,8 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        playWelcomeGreeting();
 
         // Already signed in — skip straight to the app
         firebaseAuth = FirebaseAuth.getInstance();
@@ -55,6 +68,25 @@ public class LoginActivity extends AppCompatActivity {
         setupFacebookSignIn();
         setupSocialMosaicTiles();
         setupSkipButton();
+    }
+
+    // ── Ace's welcome greeting ────────────────────────────────────────────────
+
+    /**
+     * Speaks a one-time welcome when the app opens. Purely one-way — Ace never
+     * listens for a reply here; the user has to explicitly ask to talk to Ace
+     * later (long-press the mic button) if they want to.
+     */
+    private void playWelcomeGreeting() {
+        Ace greeter = new Ace(this, null);
+        greeter.setListener(new Ace.Listener() {
+            @Override public void onSpeechRecognized(String text) {}
+            @Override public void onSpeechError(String message) {}
+            @Override public void onReady() {
+                greeter.speak(WELCOME_GREETING);
+            }
+        });
+        greeter.init();
     }
 
     // ── Google ──────────────────────────────────────────────────────────────

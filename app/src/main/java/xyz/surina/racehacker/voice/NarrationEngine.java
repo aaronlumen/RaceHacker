@@ -14,6 +14,10 @@ import xyz.surina.racehacker.models.GaugeData;
  * or any UI code.
  */
 public interface NarrationEngine {
-    /** @return a short, spoken-language summary of the given gauges. Never null. */
-    String narrate(List<GaugeData> gauges);
+    /**
+     * @param gauges live gauge readings to narrate
+     * @param level  how technical the narration should be — see {@link VocabularyLevel}
+     * @return a short, spoken-language summary. Never null.
+     */
+    String narrate(List<GaugeData> gauges, VocabularyLevel level);
 }
