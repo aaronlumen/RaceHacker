@@ -74,6 +74,63 @@
         android:layout_height="2dp"
         android:background="@color/racing_red" />
 
+    <!-- ── Shift lights ───────────────────────────────── -->
+    <!-- Green -> yellow -> orange -> red as RPM climbs toward the rev limiter,
+         reusing GaugeData's own RPM warning/critical thresholds so this stays
+         consistent with the rest of the app rather than a separate constant. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@color/header_bg"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <View
+            android:id="@+id/shift_light_1"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginHorizontal="6dp"
+            android:background="@drawable/shift_light_circle" />
+
+        <View
+            android:id="@+id/shift_light_2"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginHorizontal="6dp"
+            android:background="@drawable/shift_light_circle" />
+
+        <View
+            android:id="@+id/shift_light_3"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginHorizontal="6dp"
+            android:background="@drawable/shift_light_circle" />
+
+        <View
+            android:id="@+id/shift_light_4"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginHorizontal="6dp"
+            android:background="@drawable/shift_light_circle" />
+
+    </LinearLayout>
+
+    <!-- ── G-force ────────────────────────────────────── -->
+    <!-- Phone accelerometer only — no OBD connection needed at all. -->
+    <TextView
+        android:id="@+id/g_force_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/header_bg"
+        android:gravity="center"
+        android:paddingBottom="8dp"
+        android:text="G-Force: --"
+        android:textSize="13sp"
+        android:fontFamily="sans-serif-condensed"
+        android:textColor="@color/text_secondary" />
+
     <!-- ── Gauges grid ────────────────────────────────── -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/gauges_recycler_view"
