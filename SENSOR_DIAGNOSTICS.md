@@ -80,8 +80,8 @@ over-reacting**:
 | Throttle Position (TPS) | % and rate of change | Should move smoothly, no unexplained jumps/dropouts | — | 🔶 |
 | Ignition Timing Advance | °BTDC and response | — | Watch for abnormal retard, particularly under load | 🔶 |
 | Exhaust Temp | Temperature | — | — | 🔲 |
-| MAF — Mass Air Flow | g/s, changes with RPM/load | Should rise smoothly with throttle/RPM | Erratic or disproportionately low readings can indicate intake/MAF problems | 🔲 |
-| MAP — Manifold Absolute Pressure | kPa/inHg, response to throttle | At idle, substantially below atmospheric on a naturally aspirated engine; should respond quickly to throttle | — | 🔲 |
+| MAF — Mass Air Flow | g/s, changes with RPM/load | Should rise smoothly with throttle/RPM | Erratic or disproportionately low readings can indicate intake/MAF problems | 🔶 (read via PID 0110, shown as its own gauge; no narration rule yet) |
+| MAP — Manifold Absolute Pressure | kPa/inHg, response to throttle | At idle, substantially below atmospheric on a naturally aspirated engine; should respond quickly to throttle | — | 🔶 (read via PID 010B, shown as its own gauge — same raw reading the Boost gauge already derived from; no narration rule yet) |
 | APP — Accelerator Pedal Position | % and correlation with throttle | Should track commanded throttle smoothly | — | 🔲 |
 | O2 Sensor — upstream | Voltage or equivalence ratio | Narrowband sensors switch rapidly once warm | Don't interpret a fixed voltage without knowing sensor type | 🔲 |
 | O2 Sensor — downstream | Voltage/trend | Mainly for catalytic-converter monitoring | A downstream signal closely mimicking upstream can indicate catalyst efficiency problems | 🔲 |
@@ -156,8 +156,11 @@ auto-discovery rather than a separate effort later.
 Roughly easiest-and-most-valuable first, once there's a real device to
 validate PID parsing against:
 
-1. **MAF, MAP** — standard Mode 01 PIDs (`0x10`, `0x0B`), single values, no
-   correlation logic needed to be useful on their own.
+1. ~~**MAF, MAP** — standard Mode 01 PIDs (`0x10`, `0x0B`), single values, no
+   correlation logic needed to be useful on their own.~~ **Done** — both now
+   read and shown as gauges (`ObdConnectionService.queryMaf()`, and MAP reuses
+   the same PID 010B read the Boost gauge already made). Not yet validated
+   against real hardware.
 2. **STFT/LTFT** — standard PIDs (`0x06`–`0x09`), genuinely diagnostic
    (persistent large trim values are a real "something's wrong" signal), but
    needs the "persistent, not momentary" rule from day one.

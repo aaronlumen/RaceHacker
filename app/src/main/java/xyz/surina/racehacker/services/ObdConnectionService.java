@@ -29,6 +29,10 @@ public class ObdConnectionService {
     private boolean isPidPolling = false;
     private Handler mainHandler;
 
+    // Stashed by queryBoostPsi() so the raw MAP reading it already fetches
+    // (PID 010B) can be exposed as its own gauge without a second query.
+    private float lastMapKpa;
+
     // ─── Listener interfaces ────────────────────────────────────────────────
 
     public interface ConnectionListener {
@@ -42,7 +46,8 @@ public class ObdConnectionService {
         void onSensorData(float rpm, float speedMph, float coolantTempF,
                           float intakeTempF, float throttlePct,
                           float boostPsi, float batteryV,
-                          float timingDeg, float fuelLevelPct, float afr);
+                          float timingDeg, float fuelLevelPct, float afr,
+                          float mapKpa, float mafGps);
     }
 
     // ─── Constructor ────────────────────────────────────────────────────────
@@ -266,12 +271,14 @@ public class ObdConnectionService {
                     float timing     = queryTiming();
                     float fuelLevel  = queryFuelLevel();
                     float afr        = queryAfr();
+                    float mapKpa     = lastMapKpa; // set by queryBoostPsi() above
+                    float mafGps     = queryMaf();
 
                     if (dataListener != null) {
                         mainHandler.post(() -> dataListener.onSensorData(
                                 rpm, speedMph, coolantF, intakeF,
                                 throttle, boostPsi, battery, timing,
-                                fuelLevel, afr));
+                                fuelLevel, afr, mapKpa, mafGps));
                     }
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
@@ -385,9 +392,18 @@ public class ObdConnectionService {
     private float queryBoostPsi() {
         try {
             float map  = parseByte1(sendAndReceive("010B"), "0B");
+            lastMapKpa = map;
             float baro = parseByte1(sendAndReceive("0133"), "33");
             float boostKpa = map - baro;
             return boostKpa * 0.145038f;
+        } catch (Exception e) { return 0; }
+    }
+
+    /** MAF — mass air flow: PID 0110 → (A*256+B)/100 g/s */
+    private float queryMaf() {
+        try {
+            String r = sendAndReceive("0110");
+            return parseByteAB(r, "10", (a, b) -> (a * 256f + b) / 100f);
         } catch (Exception e) { return 0; }
     }
 

@@ -51,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int IDX_TIMING    = 9;
     private static final int IDX_THROTTLE  = 10;
     private static final int IDX_BATTERY   = 11;
+    private static final int IDX_MAP       = 12;
+    private static final int IDX_MAF       = 13;
 
     private BottomNavigationView bottomNav;
     private VehicleProfile currentVehicleProfile;
@@ -209,11 +211,17 @@ public class MainActivity extends AppCompatActivity {
         liveGauges.add(new GaugeData("Timing",      "°",   GaugeData.GaugeType.TIMING));
         liveGauges.add(new GaugeData("Throttle",    "%",   GaugeData.GaugeType.THROTTLE_POSITION));
         liveGauges.add(new GaugeData("Battery",     "V",   GaugeData.GaugeType.BATTERY_VOLTAGE));
+        // MAP/MAF — SENSOR_DIAGNOSTICS.md's suggested build order #1: standard
+        // Mode 01 PIDs, single values, useful on their own with no correlation
+        // logic needed yet.
+        liveGauges.add(new GaugeData("Manifold Press", "kPa", GaugeData.GaugeType.MAP));
+        liveGauges.add(new GaugeData("Air Flow",        "g/s", GaugeData.GaugeType.MAF));
         for (GaugeData g : liveGauges) g.setCurrentValue(Float.NaN);
 
         obdService.setDataListener((rpm, speedMph, coolantF, intakeF,
                                      throttle, boostPsi, battery,
-                                     timing, fuelLevel, afr) -> {
+                                     timing, fuelLevel, afr,
+                                     mapKpa, mafGps) -> {
             liveGauges.get(IDX_RPM).setCurrentValue(rpm);
             liveGauges.get(IDX_SPEED).setCurrentValue(speedMph);
             liveGauges.get(IDX_BOOST).setCurrentValue(boostPsi);
@@ -227,6 +235,8 @@ public class MainActivity extends AppCompatActivity {
             liveGauges.get(IDX_BATTERY).setCurrentValue(battery);
             // Fuel level mapped to FUEL_PRESSURE slot for display
             liveGauges.get(IDX_FUEL_PRES).setCurrentValue(fuelLevel);
+            liveGauges.get(IDX_MAP).setCurrentValue(mapKpa);
+            liveGauges.get(IDX_MAF).setCurrentValue(mafGps);
 
             if (dataLogger != null && dataLogger.isLogging()) {
                 for (GaugeData g : liveGauges) {
@@ -392,6 +402,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (obdService != null && obdService.isConnected()) {
+            // A forgotten OBD adapter left plugged into the car can slowly
+            // drain the battery — worth a nudge on the way out. Uses the
+            // application context so the toast still posts even though this
+            // activity is finishing (FEATURE_IDEAS.md: "remove-adapter reminder").
+            Toast.makeText(getApplicationContext(),
+                    "Don't forget to unplug your OBD adapter — leaving it in can drain your battery.",
+                    Toast.LENGTH_LONG).show();
             obdService.stopPidPolling();
             obdService.disconnect();
         }

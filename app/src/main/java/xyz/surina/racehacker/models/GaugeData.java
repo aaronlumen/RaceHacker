@@ -24,7 +24,9 @@ public class GaugeData {
         TIMING,
         THROTTLE_POSITION,
         BATTERY_VOLTAGE,
-        FUEL_LEVEL
+        FUEL_LEVEL,
+        MAF,
+        MAP
     }
 
     public GaugeData(String name, String unit, GaugeType type) {
@@ -120,6 +122,26 @@ public class GaugeData {
                 this.maxValue = 100;
                 this.warningThreshold = 20;
                 this.criticalThreshold = 10;
+                break;
+            case MAF:
+                // Mass air flow, g/s. Display-only for now (SENSOR_DIAGNOSTICS.md
+                // suggested build order #1) — no narration rule yet, so the
+                // warning/critical thresholds here are just generous scaling
+                // bounds for the gauge card, not a real alarm point.
+                this.minValue = 0;
+                this.maxValue = 300;
+                this.warningThreshold = 270;
+                this.criticalThreshold = 290;
+                break;
+            case MAP:
+                // Manifold absolute pressure, kPa. Raw value already computed
+                // internally for the Boost gauge (kPa above baro) — this shows
+                // the underlying absolute reading itself. Same "display-only,
+                // no narration yet" note as MAF above.
+                this.minValue = 0;
+                this.maxValue = 300;
+                this.warningThreshold = 250;
+                this.criticalThreshold = 280;
                 break;
         }
     }
