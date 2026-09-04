@@ -17,6 +17,10 @@ been built vs. still just an idea.
   the spoken name, Ace asks which one instead of silently grabbing the first.
 - **G-force gauge** — phone accelerometer (`TYPE_LINEAR_ACCELERATION`), no OBD
   connection required at all.
+- **MAF + MAP gauges** — `SENSOR_DIAGNOSTICS.md`'s own suggested build order
+  #1: standard Mode 01 PIDs, read and displayed, no narration rule yet.
+- **Remove-adapter reminder** — a toast on app exit if the OBD adapter is
+  still connected, so it doesn't get left plugged in draining the battery.
 
 ## Not built — next up, roughly in priority order
 
@@ -41,9 +45,6 @@ been built vs. still just an idea.
   Worth digging into Torque's "TorqueScan" plugin (a PID-discovery tool "to
   find where extended PIDs are located in an ECU") as a reference before
   building this.
-- **Remove-adapter reminder** — a "please unplug your OBD adapter" prompt on
-  app exit if still connected (leaving one plugged in can drain a car
-  battery over time). Trivial, just not done yet.
 - **Share diagnostics with a trusted mechanic** — inspired by Torque's
   AutoTalky plugin (owners share live engine data with a registered
   mechanic). RaceHacker already has the right shape of infrastructure for
