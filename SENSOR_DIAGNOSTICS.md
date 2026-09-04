@@ -5,6 +5,10 @@ normally looks like, what's actually worth flagging, and how to avoid false
 alarms. It's a knowledge base to implement *against*, not a description of
 what's implemented today — see the **Status** column below.
 
+For the larger long-term picture this feeds into — a real multi-vehicle
+diagnostic platform with per-vehicle-class PID profiles and a relationship-
+inference engine — see [DIAGNOSTIC_PLATFORM_VISION.md](DIAGNOSTIC_PLATFORM_VISION.md).
+
 ## ⚠️ Open architecture gap: thresholds aren't vehicle-aware yet
 
 Exact normal ranges are vehicle/engine-specific — a 2006 Toyota, a 2018 Ford
