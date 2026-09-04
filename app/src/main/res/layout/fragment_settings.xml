@@ -132,14 +132,17 @@
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="8dp" />
 
-        <ListView
+        <!-- RecyclerView, not ListView: a ListView nested inside this screen's outer
+             ScrollView only ever showed its first few rows and couldn't scroll to
+             reveal the rest (the ScrollView intercepts vertical touch before the
+             ListView sees it). Nested scrolling is disabled in code so the outer
+             ScrollView scrolls smoothly through the whole device list instead. -->
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/bluetooth_devices_list"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:background="@color/card_background"
-            android:divider="@color/racing_light_gray"
-            android:dividerHeight="1dp" />
+            android:background="@color/card_background" />
 
         <Button
             android:id="@+id/connect_button"

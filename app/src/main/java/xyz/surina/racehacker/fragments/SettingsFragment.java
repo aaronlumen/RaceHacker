@@ -13,7 +13,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -22,6 +21,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import java.util.Set;
 
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.activities.MainActivity;
+import xyz.surina.racehacker.adapters.BluetoothDeviceAdapter;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
 import xyz.surina.racehacker.voice.ActionRegistry;
 import xyz.surina.racehacker.voice.VocabularyLevel;
@@ -37,7 +40,7 @@ import xyz.surina.racehacker.voice.VocabularyLevel;
 public class SettingsFragment extends Fragment {
     private Spinner vehicleTypeSpinner;
     private Spinner cableTypeSpinner;
-    private ListView bluetoothDevicesList;
+    private RecyclerView bluetoothDevicesList;
     private Button scanDevicesButton;
     private Button connectButton;
     private Button autoDetectButton;
@@ -47,9 +50,8 @@ public class SettingsFragment extends Fragment {
 
     private BluetoothAdapter bluetoothAdapter;
     private List<BluetoothDevice> deviceList = new ArrayList<>();
-    private List<BluetoothDevice> filteredDeviceList = new ArrayList<>();
     private List<String> allDeviceNames = new ArrayList<>();
-    private ArrayAdapter<String> devicesAdapter;
+    private BluetoothDeviceAdapter devicesAdapter;
     private BluetoothDevice selectedDevice;
 
     @Nullable
@@ -144,18 +146,19 @@ public class SettingsFragment extends Fragment {
     }
 
     private void setupBluetoothDevicesList() {
-        devicesAdapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_list_item_1, new ArrayList<>());
-        bluetoothDevicesList.setAdapter(devicesAdapter);
-
-        bluetoothDevicesList.setOnItemClickListener((parent, view, position, id) -> {
-            if (position < filteredDeviceList.size()) {
-                selectedDevice = filteredDeviceList.get(position);
-                connectButton.setEnabled(true);
-                Toast.makeText(getContext(), "Selected: " + selectedDevice.getName(),
-                        Toast.LENGTH_SHORT).show();
-            }
+        devicesAdapter = new BluetoothDeviceAdapter(getContext(), device -> {
+            selectedDevice = device;
+            devicesAdapter.setSelectedDevice(device);
+            connectButton.setEnabled(true);
+            Toast.makeText(getContext(), "Selected: " + device.getName(), Toast.LENGTH_SHORT).show();
         });
+        bluetoothDevicesList.setLayoutManager(new LinearLayoutManager(getContext()));
+        bluetoothDevicesList.setAdapter(devicesAdapter);
+        bluetoothDevicesList.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
+        // The outer screen is a ScrollView — let it handle all scrolling through the
+        // (now unbounded-height) device list rather than this RecyclerView trying to
+        // scroll internally too.
+        bluetoothDevicesList.setNestedScrollingEnabled(false);
     }
 
     private void setupDeviceSearch() {
@@ -174,19 +177,15 @@ public class SettingsFragment extends Fragment {
     }
 
     private void filterDevices(String query) {
-        filteredDeviceList.clear();
-        devicesAdapter.clear();
-
+        List<BluetoothDevice> filtered = new ArrayList<>();
         String lower = query.toLowerCase().trim();
         for (int i = 0; i < deviceList.size(); i++) {
-            BluetoothDevice device = deviceList.get(i);
             String name = allDeviceNames.get(i).toLowerCase();
             if (lower.isEmpty() || name.contains(lower)) {
-                filteredDeviceList.add(device);
-                devicesAdapter.add(allDeviceNames.get(i));
+                filtered.add(deviceList.get(i));
             }
         }
-        devicesAdapter.notifyDataSetChanged();
+        devicesAdapter.setDevices(filtered);
     }
 
     private void setupButtons() {
@@ -257,9 +256,8 @@ public class SettingsFragment extends Fragment {
 
         deviceList.clear();
         allDeviceNames.clear();
-        filteredDeviceList.clear();
-        devicesAdapter.clear();
         selectedDevice = null;
+        devicesAdapter.setSelectedDevice(null);
         connectButton.setEnabled(false);
 
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
