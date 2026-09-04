@@ -9,12 +9,14 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.Log;
 
 import androidx.core.content.ContextCompat;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import xyz.surina.racehacker.models.GaugeData;
 
@@ -112,6 +114,7 @@ public class Ace {
             if (ttsReady) {
                 tts.setLanguage(Locale.US);
                 tts.setSpeechRate(1.0f);
+                selectBestOnDeviceVoice();
                 if (listener != null) listener.onReady();
             } else {
                 Log.w(TAG, "TextToSpeech init failed, status=" + status);
@@ -128,6 +131,36 @@ public class Ace {
                 if (listener != null) listener.onSpeakingStateChanged(false);
             }
         });
+    }
+
+    /**
+     * Picks the highest-quality available voice for en-US that doesn't
+     * require a network connection, so speech sounds less robotic than the
+     * TTS engine's default without breaking the "fully on-device, no network
+     * calls" guarantee. Falls back silently to the default voice if
+     * enumeration fails or nothing better is found (e.g. older devices with
+     * only one installed voice).
+     */
+    private void selectBestOnDeviceVoice() {
+        try {
+            Set<Voice> voices = tts.getVoices();
+            if (voices == null) return;
+            Voice best = null;
+            for (Voice v : voices) {
+                if (v.getLocale() == null || !"eng".equals(v.getLocale().getISO3Language())) continue;
+                if (v.isNetworkConnectionRequired()) continue;
+                if (v.getFeatures() != null && v.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) continue;
+                if (best == null || v.getQuality() > best.getQuality()) {
+                    best = v;
+                }
+            }
+            if (best != null) {
+                tts.setVoice(best);
+                Log.i(TAG, "Selected voice: " + best.getName() + " (quality=" + best.getQuality() + ")");
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Voice selection failed, using engine default", e);
+        }
     }
 
     public boolean hasMicPermission() {
@@ -253,6 +286,11 @@ public class Ace {
             return;
         }
 
+        if (isCapabilityQuestion(textLower)) {
+            speak(describeCapabilities());
+            return;
+        }
+
         if (actionRegistry != null) {
             ActionRegistry.Entry matched = actionRegistry.find(textLower);
             if (matched != null) {
@@ -269,6 +307,34 @@ public class Ace {
 
         String reply = commandHandler.handle(spokenText, currentGauges, narrationEngine, vocabularyLevel);
         speak(reply);
+    }
+
+    private boolean isCapabilityQuestion(String textLower) {
+        return textLower.contains("what screens") || textLower.contains("what can you do")
+                || textLower.contains("what can i say") || textLower.contains("what can i ask")
+                || textLower.equals("help") || textLower.contains("what commands");
+    }
+
+    /**
+     * Lists navigable screens and, if any, the current screen's own commands —
+     * built directly from {@link ActionRegistry}'s registered phrases, so it
+     * can't drift out of sync with what's actually available.
+     */
+    private String describeCapabilities() {
+        if (actionRegistry == null) {
+            return "I can tell you how your gauges are looking.";
+        }
+        StringBuilder sb = new StringBuilder("You can say things like: ");
+        sb.append(String.join(", ", actionRegistry.globalPhraseSamples()));
+        sb.append(" to switch screens");
+
+        List<String> screenPhrases = actionRegistry.screenPhraseSamples();
+        if (!screenPhrases.isEmpty()) {
+            sb.append(". On this screen, you can also say: ");
+            sb.append(String.join(", ", screenPhrases));
+        }
+        sb.append(". Or ask how your gauges are looking.");
+        return sb.toString();
     }
 
     private boolean isAffirmative(String textLower) {

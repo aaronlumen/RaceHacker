@@ -71,6 +71,29 @@ public class ActionRegistry {
         return findIn(global, spokenTextLower);
     }
 
+    /**
+     * The first registered phrase for each global (navigation) action — e.g.
+     * "dashboard", "diagnostics" — for a "what can I say" listing. Reflects
+     * whatever's actually registered, so it can't drift out of sync with the
+     * real commands.
+     */
+    public List<String> globalPhraseSamples() {
+        return firstPhrases(global);
+    }
+
+    /** Same as {@link #globalPhraseSamples()}, for the current screen's own actions. */
+    public List<String> screenPhraseSamples() {
+        return firstPhrases(screen);
+    }
+
+    private List<String> firstPhrases(List<Entry> entries) {
+        List<String> out = new ArrayList<>();
+        for (Entry e : entries) {
+            if (e.phrases.length > 0) out.add(e.phrases[0]);
+        }
+        return out;
+    }
+
     private Entry findIn(List<Entry> entries, String textLower) {
         for (Entry e : entries) {
             for (String phrase : e.phrases) {
