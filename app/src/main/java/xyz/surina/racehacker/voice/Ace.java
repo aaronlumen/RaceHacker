@@ -71,6 +71,14 @@ public class Ace {
     private VocabularyLevel vocabularyLevel;
     private ActionRegistry.Entry pendingConfirmation;
 
+    // Proactive alerts (e.g. "your engine's running a little warm") — see
+    // checkForProactiveAlert(). Debounced so a fluctuating sensor (RPM updates
+    // ~every 500ms) can't turn into Ace repeating itself every tick.
+    private boolean proactiveAlertsEnabled = true;
+    private String lastAlertMessage;
+    private long lastAlertTimeMs;
+    private static final long ALERT_MIN_REPEAT_INTERVAL_MS = 20_000;
+
     public Ace(Context context, ActionRegistry actionRegistry) {
         this(context, new RuleBasedNarrationEngine(), new RuleBasedCommandHandler(), actionRegistry);
     }
@@ -136,6 +144,41 @@ public class Ace {
     /** Speaks a narration of the given live gauge readings, at the current vocabulary level. */
     public void speakStatus(List<GaugeData> gauges) {
         speak(narrationEngine.narrate(gauges, vocabularyLevel));
+    }
+
+    public void setProactiveAlertsEnabled(boolean enabled) {
+        this.proactiveAlertsEnabled = enabled;
+    }
+
+    public boolean isProactiveAlertsEnabled() {
+        return proactiveAlertsEnabled;
+    }
+
+    /**
+     * Call on every live gauge update (not just on demand). Speaks up on its
+     * own only when there's something worth mentioning — never on every tick:
+     * a message identical to the last one spoken is suppressed until
+     * {@link #ALERT_MIN_REPEAT_INTERVAL_MS} has passed, while a genuinely new
+     * or worsened condition (a different message) always speaks immediately.
+     * Silent whenever nothing is wrong.
+     */
+    public void checkForProactiveAlert(List<GaugeData> gauges) {
+        if (!proactiveAlertsEnabled) return;
+
+        String alert = narrationEngine.checkForAlert(gauges, vocabularyLevel);
+        if (alert == null) {
+            lastAlertMessage = null; // condition cleared — allow re-announcing if it comes back
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        boolean sameAsLast = alert.equals(lastAlertMessage);
+        boolean cooldownElapsed = (now - lastAlertTimeMs) >= ALERT_MIN_REPEAT_INTERVAL_MS;
+        if (sameAsLast && !cooldownElapsed) return;
+
+        speak(alert);
+        lastAlertMessage = alert;
+        lastAlertTimeMs = now;
     }
 
     /**

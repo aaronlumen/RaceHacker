@@ -221,6 +221,9 @@ public class MainActivity extends AppCompatActivity {
             liveGauges.get(IDX_FUEL_PRES).setCurrentValue(fuelLevel);
 
             if (gaugeUpdateListener != null) gaugeUpdateListener.run();
+            // Debounced — only actually speaks up when there's something worth
+            // saying, never on every poll tick. See Ace.checkForProactiveAlert().
+            if (ace != null) ace.checkForProactiveAlert(liveGauges);
         });
     }
 
