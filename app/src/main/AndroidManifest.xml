@@ -18,8 +18,14 @@
     <!-- Internet Permission (for updates, etc.) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Microphone Permission (voice copilot: speech-to-text commands) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <uses-feature
         android:name="android.hardware.bluetooth"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
         android:required="false" />
 
     <application

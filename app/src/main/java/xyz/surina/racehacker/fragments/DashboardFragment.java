@@ -5,12 +5,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +25,7 @@ import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.adapters.GaugeAdapter;
 import xyz.surina.racehacker.models.GaugeData;
 import xyz.surina.racehacker.services.ObdConnectionService;
+import xyz.surina.racehacker.voice.Ace;
 
 public class DashboardFragment extends Fragment {
 
@@ -28,6 +34,11 @@ public class DashboardFragment extends Fragment {
     private List<GaugeData> gaugeList;
     private TextView statusText;
     private TextView vehicleNameText;
+
+    // Voice copilot — tap the FAB for a spoken status narration, long-press to speak a command.
+    private Ace ace;
+    private FloatingActionButton voiceFab;
+    private ActivityResultLauncher<String> micPermissionLauncher;
 
     // Indices into gaugeList — must match setupGauges() order
     private static final int IDX_RPM       = 0;
@@ -43,6 +54,21 @@ public class DashboardFragment extends Fragment {
     private static final int IDX_THROTTLE  = 10;
     private static final int IDX_BATTERY   = 11;
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Must be registered before the fragment reaches CREATED — cannot be done lazily in onCreateView.
+        micPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (granted) {
+                        ace.startListening();
+                    } else {
+                        Toast.makeText(getContext(), "Microphone permission is needed to talk to the copilot.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -52,9 +78,11 @@ public class DashboardFragment extends Fragment {
         statusText      = view.findViewById(R.id.status_text);
         vehicleNameText = view.findViewById(R.id.vehicle_name_text);
         gaugesRecyclerView = view.findViewById(R.id.gauges_recycler_view);
+        voiceFab        = view.findViewById(R.id.voice_fab);
 
         setupGauges();
         setupRecyclerView();
+        setupAce();
         updateVehicleInfo();
 
         return view;
@@ -71,6 +99,47 @@ public class DashboardFragment extends Fragment {
     public void onPause() {
         super.onPause();
         detachObdListener();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (ace != null) {
+            ace.shutdown();
+        }
+    }
+
+    // ─── Voice copilot ───────────────────────────────────────────────────────
+
+    private void setupAce() {
+        ace = new Ace(requireContext());
+        ace.setListener(new Ace.Listener() {
+            @Override
+            public void onSpeechRecognized(String text) {
+                ace.handleCommand(text, gaugeList);
+            }
+
+            @Override
+            public void onSpeechError(String message) {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        ace.init();
+
+        // Tap: speak a status narration of the current gauges.
+        voiceFab.setOnClickListener(v -> ace.speakStatus(gaugeList));
+
+        // Long-press: listen for a spoken command (requesting mic permission first if needed).
+        voiceFab.setOnLongClickListener(v -> {
+            if (ace.hasMicPermission()) {
+                ace.startListening();
+            } else {
+                micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO);
+            }
+            return true;
+        });
     }
 
     // ─── Gauge setup ─────────────────────────────────────────────────────────
