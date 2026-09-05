@@ -93,6 +93,19 @@ public class NetworkDiscoveryManager {
                     }
                     @Override
                     public void onServiceResolved(NsdServiceInfo info) {
+                        // mDNS re-announces periodically, so onServiceFound()
+                        // firing more than once for the same advertised
+                        // service during a single scan is normal, expected
+                        // behavior, not an error — replace any existing entry
+                        // for this service name rather than appending a
+                        // duplicate (confirmed real: the picker showed the
+                        // same device twice before this fix).
+                        for (NsdServiceInfo existing : discoveredDevices) {
+                            if (existing.getServiceName().equals(info.getServiceName())) {
+                                discoveredDevices.remove(existing);
+                                break;
+                            }
+                        }
                         discoveredDevices.add(info);
                         notifyChanged();
                     }
