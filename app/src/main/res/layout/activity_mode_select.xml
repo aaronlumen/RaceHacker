@@ -16,7 +16,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="S U R I N A"
-        android:textColor="#444444"
+        android:textColor="@color/racing_orange"
         android:textSize="10sp"
         android:textStyle="italic"
         android:fontFamily="sans-serif-light"
