@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.carhacker.kit.R
 import com.carhacker.kit.databinding.ActivityCarhackerMainBinding
 import com.carhacker.kit.can.CANProtocol
+import com.carhacker.kit.diagnostics.DiagnosticIntelligenceEngine
 import com.carhacker.kit.knowledge.PidKnowledgeStore
 import com.carhacker.kit.obd.*
 import com.carhacker.kit.security.SecurityTester
@@ -80,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnGetVehicleInfo.setOnClickListener { getVehicleInfo() }
         binding.btnSecurityScan.setOnClickListener { runSecurityScan() }
         binding.btnViewKnowledge.setOnClickListener { viewKnowledge() }
+        binding.btnDiagnose.setOnClickListener { runDiagnosticIntelligence() }
         binding.btnExportLog.setOnClickListener { exportLog() }
         binding.btnClearLog.setOnClickListener { clearLog() }
         
@@ -517,6 +519,27 @@ class MainActivity : AppCompatActivity() {
                 log("Also have knowledge for: ${others.joinToString()}")
             }
             log("═══════════════════════════════════")
+        }
+    }
+
+    /**
+     * S3 Diagnostic Intelligence — see S3_VISION.md §0. Runs the full
+     * scan/identify/discover/read-codes/collect-live-data/correlate/
+     * diagnose pipeline in one pass rather than making the user click
+     * through the individual buttons above in sequence.
+     */
+    private fun runDiagnosticIntelligence() {
+        lifecycleScope.launch {
+            log("═══ S3 Diagnostic Intelligence ═══")
+            log("⚠️ WARNING: Ensure you have authorization to test this vehicle")
+
+            obdProtocol?.let { protocol ->
+                val engine = DiagnosticIntelligenceEngine(protocol, knowledgeStore)
+                val session = engine.runWorkflow(currentVehicleKey)
+                currentVehicleKey = session.vehicleKey
+                log(session.toReport())
+                log("═══════════════════════════════════")
+            } ?: log("Not connected — connect to a vehicle first.")
         }
     }
 

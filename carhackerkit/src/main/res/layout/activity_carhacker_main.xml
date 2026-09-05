@@ -255,6 +255,16 @@
                     android:textSize="10sp"
                     android:textAllCaps="false"
                     style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnDiagnose"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="🩺 Diagnose"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitPrimaryButton" />
             </GridLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
