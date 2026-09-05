@@ -124,8 +124,15 @@ dependencies {
     // MPAndroidChart (gauges + CAN monitor graphs)
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
-    // Gson (plugin profile JSON parsing)
+    // Gson (plugin profile JSON parsing, and network gauge relay serialization)
     implementation 'com.google.code.gson:gson:2.10.1'
+
+    // WebSocket client+server, for relaying live gauge data between two devices
+    // on the same network (one in-car "broadcaster" plugged into the vehicle,
+    // one "mirror" display/dev-machine consumer) — see NetworkDiscoveryManager.
+    // Plain JSON-over-WebSocket on purpose: any external tool (a script, VS
+    // Code, a browser) can connect directly with no app-specific client needed.
+    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'

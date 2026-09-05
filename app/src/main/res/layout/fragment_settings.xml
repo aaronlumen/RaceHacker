@@ -400,6 +400,70 @@
 
         </LinearLayout>
 
+        <!-- Network gauge relay -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="NETWORK"
+            android:letterSpacing="0.1"
+            style="@style/RacingTextSubtitle" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:background="@color/racing_light_gray" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Share live gauge data with another device on the same WiFi network — a passenger's phone as a second display, or a laptop for debugging."
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:background="@color/card_background">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Broadcast this device's gauge data"
+                style="@style/RacingTextBody" />
+
+            <Switch
+                android:id="@+id/network_broadcast_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/find_nearby_devices_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Find Nearby Devices"
+            style="@style/RacingButtonSecondary" />
+
+        <TextView
+            android:id="@+id/network_status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="16dp"
+            android:text="Not broadcasting, not mirroring"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+
     </LinearLayout>
 
 </ScrollView>

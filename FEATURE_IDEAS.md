@@ -40,6 +40,16 @@ been built vs. still just an idea.
 - **Historical graphing** — new History tab, MPAndroidChart line chart of any
   one gauge's last 5 minutes (`GaugeHistoryStore`, in-memory, resets on
   restart — `DataLogger`'s CSV export is still the durable record).
+- **Network gauge relay** — one device (in the car) broadcasts live gauge
+  data over WiFi (Android NSD for discovery, a plain JSON-over-WebSocket
+  feed for the data itself), another device on the same network mirrors it
+  — a passenger's phone as a second display, or a laptop plugged into VS
+  Code for debugging. Deliberately not a custom protocol: any WebSocket
+  client can read the feed directly. New `xyz.surina.racehacker.network`
+  package (`NetworkDiscoveryManager`, `GaugeBroadcastServer`,
+  `GaugeMirrorClient`); Settings → Network. Compiled/installed/launched
+  clean, but not yet verified end-to-end with two real devices on the same
+  network — that's the next real test.
 
 ## Not built — next up, roughly in priority order
 

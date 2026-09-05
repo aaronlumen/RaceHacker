@@ -21,6 +21,9 @@ import androidx.fragment.app.FragmentTransaction;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import android.net.nsd.NsdServiceInfo;
+
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +33,9 @@ import xyz.surina.racehacker.fragments.*;
 import xyz.surina.racehacker.models.GaugeData;
 import xyz.surina.racehacker.models.GaugeHistoryStore;
 import xyz.surina.racehacker.models.GaugeThresholdPrefs;
+import xyz.surina.racehacker.network.GaugeBroadcastServer;
+import xyz.surina.racehacker.network.GaugeMirrorClient;
+import xyz.surina.racehacker.network.NetworkDiscoveryManager;
 import xyz.surina.racehacker.utils.DataLogger;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
 import xyz.surina.racehacker.services.ObdConnectionService;
@@ -74,6 +80,16 @@ public class MainActivity extends AppCompatActivity {
     // Owned here for the same "keeps updating regardless of active tab" reason
     // as liveGauges.
     private final GaugeHistoryStore gaugeHistory = new GaugeHistoryStore();
+
+    // Network gauge relay — one device (in the car, connected to the OBD
+    // adapter) broadcasts its live gauge readings over WiFi; another device
+    // on the same network mirrors them, e.g. a passenger's phone as a second
+    // display, or a laptop for dev/debugging. See the network/ package.
+    public enum NetworkMode { OFF, BROADCASTING, MIRRORING }
+    private NetworkMode networkMode = NetworkMode.OFF;
+    private GaugeBroadcastServer broadcastServer;
+    private GaugeMirrorClient mirrorClient;
+    private NetworkDiscoveryManager discoveryManager;
 
     // Owned here for the same reason as liveGauges — logging shouldn't stop
     // just because the user switched off the Dashboard tab. Was previously
@@ -272,22 +288,138 @@ public class MainActivity extends AppCompatActivity {
             liveGauges.get(IDX_LTFT).setCurrentValue(ltftPct);
             liveGauges.get(IDX_O2).setCurrentValue(o2Volts);
 
-            long now = System.currentTimeMillis();
-            for (GaugeData g : liveGauges) {
-                if (!g.hasData()) continue;
-                if (dataLogger != null && dataLogger.isLogging()) dataLogger.logData(g);
-                gaugeHistory.record(g.getType(), g.getCurrentValue(), now);
+            afterGaugeUpdate();
+            if (networkMode == NetworkMode.BROADCASTING && broadcastServer != null) {
+                broadcastServer.broadcastGauges(liveGauges);
             }
-
-            if (gaugeUpdateListener != null) gaugeUpdateListener.run();
-            // Debounced — only actually speaks up when there's something worth
-            // saying, never on every poll tick. See Ace.checkForProactiveAlert().
-            if (ace != null) ace.checkForProactiveAlert(liveGauges);
         });
+    }
+
+    /**
+     * Shared tail of every gauge update, regardless of where the values came
+     * from — a real OBD poll (above) or a mirrored snapshot from another
+     * device on the network (applyMirroredGaugeUpdate() below). Logging,
+     * history, the UI refresh, and Ace's proactive narration all work
+     * identically either way; nothing downstream needs to know which one
+     * happened.
+     */
+    private void afterGaugeUpdate() {
+        long now = System.currentTimeMillis();
+        for (GaugeData g : liveGauges) {
+            if (!g.hasData()) continue;
+            if (dataLogger != null && dataLogger.isLogging()) dataLogger.logData(g);
+            gaugeHistory.record(g.getType(), g.getCurrentValue(), now);
+        }
+
+        if (gaugeUpdateListener != null) gaugeUpdateListener.run();
+        // Debounced — only actually speaks up when there's something worth
+        // saying, never on every poll tick. See Ace.checkForProactiveAlert().
+        if (ace != null) ace.checkForProactiveAlert(liveGauges);
     }
 
     public List<GaugeData> getLiveGauges() {
         return liveGauges;
+    }
+
+    // ─── Network gauge relay ─────────────────────────────────────────────────
+    // See xyz.surina.racehacker.network package. One device broadcasts, one
+    // mirrors — see the NetworkMode field's own comment.
+
+    public NetworkMode getNetworkMode() {
+        return networkMode;
+    }
+
+    /** Starts advertising this device's gauge data on the local network. */
+    public void startBroadcasting() {
+        if (networkMode != NetworkMode.OFF) return;
+        broadcastServer = new GaugeBroadcastServer(GaugeBroadcastServer.DEFAULT_PORT);
+        broadcastServer.start();
+
+        if (discoveryManager == null) discoveryManager = new NetworkDiscoveryManager(this);
+        String deviceName = currentVehicleProfile.getName() + " (" + android.os.Build.MODEL + ")";
+        discoveryManager.registerBroadcaster(deviceName, GaugeBroadcastServer.DEFAULT_PORT);
+
+        networkMode = NetworkMode.BROADCASTING;
+    }
+
+    public void stopBroadcasting() {
+        if (networkMode != NetworkMode.BROADCASTING) return;
+        if (discoveryManager != null) discoveryManager.unregisterBroadcaster();
+        if (broadcastServer != null) {
+            try {
+                broadcastServer.stop();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            broadcastServer = null;
+        }
+        networkMode = NetworkMode.OFF;
+    }
+
+    /** Browses for other RaceHacker devices broadcasting nearby. Settings owns the picker UI. */
+    public void findNearbyDevices(NetworkDiscoveryManager.DiscoveryListener listener) {
+        if (discoveryManager == null) discoveryManager = new NetworkDiscoveryManager(this);
+        discoveryManager.startDiscovery(listener);
+    }
+
+    public void stopFindingNearbyDevices() {
+        if (discoveryManager != null) discoveryManager.stopDiscovery();
+    }
+
+    /** Connects to a broadcaster found via findNearbyDevices() and starts mirroring its gauges. */
+    public void connectToMirror(NsdServiceInfo resolvedDevice) {
+        if (networkMode != NetworkMode.OFF) return;
+        try {
+            URI uri = new URI("ws://" + resolvedDevice.getHost().getHostAddress() + ":" + resolvedDevice.getPort());
+            mirrorClient = new GaugeMirrorClient(uri, new GaugeMirrorClient.MirrorListener() {
+                @Override
+                public void onGaugesReceived(List<GaugeData> gauges) {
+                    runOnUiThread(() -> applyMirroredGaugeUpdate(gauges));
+                }
+                @Override
+                public void onMirrorConnected() {
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                            "Mirroring " + resolvedDevice.getServiceName(), Toast.LENGTH_SHORT).show());
+                }
+                @Override
+                public void onMirrorDisconnected() {
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                            "Mirror connection lost", Toast.LENGTH_SHORT).show());
+                }
+            });
+            mirrorClient.connect();
+            networkMode = NetworkMode.MIRRORING;
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not connect: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void disconnectMirror() {
+        if (networkMode != NetworkMode.MIRRORING) return;
+        if (mirrorClient != null) {
+            mirrorClient.close();
+            mirrorClient = null;
+        }
+        networkMode = NetworkMode.OFF;
+    }
+
+    /**
+     * Applies a gauge snapshot received from a broadcaster device — matched
+     * by GaugeType, same as every other gauge-consuming code path in this
+     * app. Runs the identical afterGaugeUpdate() tail a real OBD poll would,
+     * so logging/history/UI refresh/Ace narration all work unchanged
+     * regardless of whether the data came from a real adapter or a mirror.
+     */
+    private void applyMirroredGaugeUpdate(List<GaugeData> remoteGauges) {
+        for (GaugeData remote : remoteGauges) {
+            for (GaugeData local : liveGauges) {
+                if (local.getType() == remote.getType()) {
+                    local.setCurrentValue(remote.getCurrentValue());
+                    break;
+                }
+            }
+        }
+        afterGaugeUpdate();
     }
 
     public GaugeHistoryStore getGaugeHistory() {
@@ -461,6 +593,9 @@ public class MainActivity extends AppCompatActivity {
         if (dataLogger != null && dataLogger.isLogging()) {
             dataLogger.stopLogging();
         }
+        if (networkMode == NetworkMode.BROADCASTING) stopBroadcasting();
+        if (networkMode == NetworkMode.MIRRORING) disconnectMirror();
+        if (discoveryManager != null) discoveryManager.stopDiscovery();
         if (ace != null) {
             ace.shutdown();
         }

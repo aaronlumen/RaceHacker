@@ -18,6 +18,12 @@
     <!-- Internet Permission (for updates, etc.) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- WiFi state (network gauge broadcast/mirroring — NsdManager discovery
+         needs to know the device is actually on WiFi, and multicast state
+         for reliable mDNS on some devices/routers) -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
     <!-- Microphone Permission (voice copilot: speech-to-text commands) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
