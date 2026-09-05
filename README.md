@@ -216,6 +216,64 @@ cd RaceHacker
 The app builds and runs with **no backend configuration required** — login falls back to a local
 guest session automatically.
 
+### Building a signed release
+
+Release builds are signed with a real keystore, kept **outside the repo entirely** —
+`app/build.gradle` looks for it at a fixed path in your home directory and falls back to an
+unsigned release build if it's not there, so a fresh clone (or CI) never fails for lacking it.
+
+**One-time setup** — generate a keystore and point the build at it:
+
+```bash
+mkdir -p ~/.android
+keytool -genkeypair -v \
+  -keystore ~/.android/racehacker-release.jks \
+  -alias racehacker \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Your Name, OU=RaceHacker, O=Your Name, L=Unknown, ST=Unknown, C=US"
+# PKCS12 keystores use one password for both store and key — keytool will warn
+# about this and use the store password for both; that's expected.
+
+cat > ~/.android/racehacker-keystore.properties <<EOF
+storeFile=$HOME/.android/racehacker-release.jks
+storePassword=<the password you just set>
+keyAlias=racehacker
+keyPassword=<the same password>
+EOF
+chmod 600 ~/.android/racehacker-release.jks ~/.android/racehacker-keystore.properties
+```
+
+**Every release** — bump the version, build, verify, and publish:
+
+```bash
+# 1. Bump versionCode and versionName in app/build.gradle
+
+# 2. Build the signed release APK
+./gradlew :app:assembleRelease
+# → app/build/outputs/apk/release/app-release.apk
+
+# 3. Verify it's actually signed with your key, not left unsigned
+$ANDROID_HOME/build-tools/<version>/apksigner verify --print-certs \
+  app/build/outputs/apk/release/app-release.apk
+
+# 4. Publish as a GitHub Release with the APK attached
+gh release create vX.Y.Z \
+  --repo aaronlumen/RaceHacker \
+  --target main \
+  --title "RaceHacker vX.Y.Z" \
+  --notes "What changed in this release." \
+  app/build/outputs/apk/release/app-release.apk
+```
+
+The README's download badge always points at `/releases/latest/download/RaceHacker.apk`, so as
+long as the uploaded asset is named exactly `RaceHacker.apk` (rename it before the `gh release
+create` step if `assembleRelease` named it something else), that link keeps working across every
+future release with no further changes needed here.
+
+Losing the keystore means you can never publish an update that installs over an existing one —
+back up `~/.android/racehacker-release.jks` and its password somewhere durable (a password
+manager, not just this machine).
+
 ### Optional: social login setup
 
 1. [console.firebase.google.com](https://console.firebase.google.com) → create a project → add an
