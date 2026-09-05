@@ -97,6 +97,14 @@ public class DashboardFragment extends Fragment implements SensorEventListener {
         shiftLight4 = view.findViewById(R.id.shift_light_4);
         gForceText = view.findViewById(R.id.g_force_text);
 
+        View historyButton = view.findViewById(R.id.history_icon_button);
+        if (historyButton != null) {
+            historyButton.setOnClickListener(v -> {
+                MainActivity main = getMainActivity();
+                if (main != null) main.openHistoryScreen();
+            });
+        }
+
         MainActivity main = getMainActivity();
         gaugeList = main != null ? main.getLiveGauges() : new ArrayList<>();
 

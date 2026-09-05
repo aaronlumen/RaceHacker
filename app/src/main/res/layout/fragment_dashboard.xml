@@ -38,6 +38,20 @@
             style="@style/RacingTextTitle"
             android:textSize="16sp" />
 
+        <!-- History entry point — no bottom-nav tab of its own (BottomNavigationView
+             hard-caps at 5 items; a 6th crashes on inflation), so this icon plus the
+             "open history" voice command are its only entry points. -->
+        <ImageButton
+            android:id="@+id/history_icon_button"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@id/status_text"
+            android:layout_marginEnd="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_history"
+            android:contentDescription="@string/nav_history" />
+
         <!-- Live status pill -->
         <TextView
             android:id="@+id/status_text"
