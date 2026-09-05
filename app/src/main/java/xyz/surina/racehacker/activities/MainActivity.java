@@ -148,8 +148,6 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new EcuFlashFragment();
             } else if (itemId == R.id.nav_tuning) {
                 selectedFragment = new TuningFragment();
-            } else if (itemId == R.id.nav_history) {
-                selectedFragment = new HistoryFragment();
             } else if (itemId == R.id.nav_settings) {
                 selectedFragment = new SettingsFragment();
             }
@@ -166,6 +164,15 @@ public class MainActivity extends AppCompatActivity {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment);
         transaction.commit();
+    }
+
+    /**
+     * History has no bottom-nav tab of its own — see the comment on the
+     * "Opening History." voice action for why. Reachable via voice ("open
+     * history") and a small icon button on the Dashboard header instead.
+     */
+    public void openHistoryScreen() {
+        loadFragment(new HistoryFragment());
     }
 
     private void setupBluetoothPermissions() {
@@ -330,8 +337,12 @@ public class MainActivity extends AppCompatActivity {
         actionRegistry.registerGlobal("Opening Tuning.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_tuning),
                 "tuning", "tune screen");
+        // Not a bottom-nav tab — BottomNavigationView hard-caps at 5 items and
+        // throws on a 6th (this is exactly what crashed ENTER RACING after
+        // History was briefly added as a tab). Loaded directly instead; see
+        // openHistoryScreen() and its dashboard-header icon-button entry point.
         actionRegistry.registerGlobal("Opening History.",
-                () -> bottomNav.setSelectedItemId(R.id.nav_history),
+                this::openHistoryScreen,
                 "history", "history screen", "graphs", "charts");
         actionRegistry.registerGlobal("Opening Settings.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_settings),
