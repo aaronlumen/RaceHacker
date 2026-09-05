@@ -1,15 +1,22 @@
-# Session Handoff — 2026-09-05
+# Session Handoff — 2026-09-05 (updated same day, after v1.0.1)
 
 Written so a fresh Claude session (after this conversation is cleared) can pick up
 exactly where this one left off, without re-deriving any of this from git log archaeology.
-Read this first, then the docs it points to.
+Read this first, then the docs it points to. This doc has been updated once already
+today — the "updated" note above means don't trust a cached/older copy of this file.
 
 ## Repo state right now
 
-`main` is up to date with everything below merged in (`git log --oneline -20` shows all
-of it). No open PRs, no uncommitted work, nothing stashed. Signed release `v1.0.0` exists
-on GitHub (https://github.com/aaronlumen/RaceHacker/releases/tag/v1.0.0) — **v1.0.1 was
-requested but not yet cut**, see "Immediate next step" below.
+`main` is up to date with everything below merged in (`git log --oneline -25`). No open
+PRs, no uncommitted work, nothing stashed. **Signed release `v1.0.1` is live**
+(https://github.com/aaronlumen/RaceHacker/releases/tag/v1.0.1) — this supersedes the
+"immediate next step: cut v1.0.1" that used to be here; that's done. README.md now also
+documents the full manual build/release process (keystore setup, build/verify/publish
+commands) so cutting the *next* release doesn't require re-deriving these steps.
+
+**The only thing actually still open from this session is the Bluetooth connect-failure
+investigation** — see its own section below, unchanged in status: still waiting on the
+user to reproduce with logcat watching, or run the Torque HCI-snoop comparison.
 
 Physical test device: Pixel 6, serial `19191FDF60058J`, connected via USB. Standing rule
 for this device, self-imposed after an earlier incident this session where a blind
@@ -46,6 +53,12 @@ explicitly saying so in the moment.
    crashed the app the instant "ENTER RACING" was tapped. History is no longer a
    bottom-nav tab — it's a small icon button in the Dashboard header + the existing
    "open history" voice command (PR #11)
+9. **`SESSION_HANDOFF.md` created** (PR #12) — this file, first version
+10. **v1.0.1 released** — version bump (PR #13) + actually published as a GitHub Release
+    with the signed APK attached, tag `v1.0.1`. Verified same signing key as v1.0.0 (SHA-256
+    `a46f9d2f...`), so it updates cleanly over an existing install
+11. **README: manual build/release commands documented** (PR #14) — keystore generation,
+    build/verify/publish steps, and the download-badge asset-naming dependency
 
 ## Known gap in verification — read this before trusting "compiles and installs"
 
@@ -64,29 +77,11 @@ reasoned about. Ask the user to tap through and confirm before assuming any of i
 live, or ask them to relax the no-taps rule for a specific verification pass if that's
 genuinely needed.
 
-## Immediate next step: cut v1.0.1
+## Open thread: user's Bluetooth OBD adapter won't connect — THE thing to pick up next
 
-User asked for this (`"release v1.0.1?"`) right before the crash was discovered — paused
-mid-way to fix the crash first (releasing a build where Racing mode 100%-crashes on
-entry would have been bad). Now that the crash is fixed, the release should actually
-happen. Steps (same pattern as v1.0.0, see git log for the original commit that set up
-signing):
-
-```bash
-# bump version in app/build.gradle: versionCode 1 -> 2, versionName "1.0.0" -> "1.0.1"
-./gradlew :app:assembleRelease
-/home/toor/Android/Sdk/build-tools/35.0.0/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk  # confirm real key, not debug
-gh release create v1.0.1 --repo aaronlumen/RaceHacker --target main --title "RaceHacker v1.0.1" --notes "..." app/build/outputs/apk/release/app-release.apk
-```
-
-Worth listing the crash fix prominently in the release notes since it's the most
-user-visible thing in this batch.
-
-## Open thread: user's Bluetooth OBD adapter won't connect
-
-Real-world bug report from the user, mid-diagnosis when this session got interrupted by
-the crash discovery above. Established so far via a clarifying question and adb logcat
-capture:
+Real-world bug report from the user, still unresolved — this is the single most
+important open item in this doc. Established so far via a clarifying question and one
+adb logcat capture attempt:
 
 - **Symptom**: the adapter *does* show up in the app's device list (so it's likely
   already bonded at the OS level) — connection **fails** when tapping Connect, not
@@ -97,24 +92,25 @@ capture:
   (`createRfcommSocketChannel1()`) if that fails. This fallback was added earlier this
   session specifically for adapters that don't advertise SDP records properly, and **has
   never been verified against the user's real hardware**.
-- **In-flight, not yet done**: logcat was cleared and the user was asked to tap Connect
-  again so the exact exception could be captured live, but the crash discovery
-  interrupted this before the user reported back. **Next step: ask the user to tap
-  Connect again, then run `adb logcat -d | grep -A5 "Connection failed"` (or just check
-  `ObdConnectionService`'s tag) to see the real exception** — don't re-guess from code
-  reading alone when live capture is one tap away.
-- **User's own offer, still available**: enable Developer Options → "Enable Bluetooth
-  HCI snoop log", connect successfully via Torque (a working reference app), then
-  `adb pull` the resulting `btsnoop_hci.log` to compare exactly what Torque does
-  differently at the protocol level. Good next step if the logcat exception alone
-  doesn't explain the failure.
-- Also separately fixed this session, unrelated to the above: `SettingsFragment.scanForDevices()`
-  only ever listed already-bonded devices (`getBondedDevices()`) — it never called
-  `BluetoothAdapter.startDiscovery()` to find genuinely new/unpaired devices. **This
-  was diagnosed but the fix itself was not yet written** when the conversation moved on
-  to the "shows devices but fails to connect" report (which turned out to be the user's
-  actual, more specific symptom). Worth doing anyway for anyone whose adapter isn't
-  already paired — real discovery via a `BroadcastReceiver` on `BluetoothDevice.ACTION_FOUND`.
+- **Status: still waiting on the user, nothing more to do until they respond.** Logcat
+  was cleared and the user was asked to tap Connect again so the exact exception could
+  be captured live — that request is still outstanding (the conversation moved on to
+  the crash fix and then the v1.0.1 release before they reported back). **First thing to
+  do in a new session: re-ask them to tap Connect now, then run
+  `adb logcat -d -s ObdConnectionService:* AndroidRuntime:E` (or just grep for
+  "Connection failed") to see the real exception** — don't re-guess from code reading
+  alone when live capture is one tap away.
+- **User's own offer, still available and probably the better next step if the logcat
+  alone isn't conclusive**: enable Developer Options → "Enable Bluetooth HCI snoop log",
+  connect successfully via Torque (a working reference app), then `adb pull` the
+  resulting `btsnoop_hci.log` to compare exactly what Torque does differently at the
+  protocol level (which SDP UUID it queries, what channel it actually opens).
+- Also separately diagnosed this session, unrelated to the above, **fix not yet
+  written**: `SettingsFragment.scanForDevices()` only ever lists already-bonded devices
+  (`getBondedDevices()`) — it never calls `BluetoothAdapter.startDiscovery()` to find
+  genuinely new/unpaired devices. Not this user's actual blocker (their adapter already
+  shows up), but worth fixing anyway for anyone whose adapter isn't pre-paired — real
+  discovery via a `BroadcastReceiver` on `BluetoothDevice.ACTION_FOUND`.
 
 ## The idea backlog — where to look for "what's next"
 
