@@ -94,6 +94,26 @@ configuration.
   Settings or by voice ("start logging" / "stop logging"). Runs regardless of which tab is showing.
 - **Social login** — Google Sign-In (Firebase Auth) and Facebook Login, with a Skip option for
   local-only use; falls back to a guest session if unconfigured.
+- **Network gauge relay** — one device (in the car, connected to the OBD adapter) broadcasts its
+  live gauge data over the local WiFi network; another device on the same network discovers it
+  (via Android's built-in NSD/mDNS, no manual IP entry) and mirrors it — a passenger's phone as a
+  second display, or a laptop for debugging. Enabled from Settings → Network.
+
+  The relay is plain JSON over a standard WebSocket handshake on purpose — not a custom protocol
+  — so any tool that can open a WebSocket can read it directly, no app or client library needed:
+
+  ```bash
+  # from a laptop on the same network, once you know the broadcasting device's IP:port
+  # (shown when you enable broadcasting, default port 8420)
+  websocat ws://<device-ip>:8420
+  # or from Node/VS Code:
+  # const ws = new WebSocket('ws://<device-ip>:8420');
+  # ws.onmessage = (e) => console.log(JSON.parse(e.data));
+  ```
+
+  Each message is a JSON array of the full gauge list (name, unit, current/min/max values,
+  warning/critical thresholds, type), sent on every update — the same ~500ms cadence as OBD
+  polling. No authentication — this is meant for a trusted local network, not the open internet.
 - Carbon-fiber / checkered-flag racing UI theme.
 
 ### Workshop mode (CarHackerKit, `:carhackerkit`)

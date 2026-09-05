@@ -1,9 +1,13 @@
 package xyz.surina.racehacker.fragments;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.net.nsd.NsdServiceInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -36,6 +40,7 @@ import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.adapters.BluetoothDeviceAdapter;
 import xyz.surina.racehacker.models.GaugeData;
 import xyz.surina.racehacker.models.GaugeThresholdPrefs;
+import xyz.surina.racehacker.network.NetworkDiscoveryManager;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
 import xyz.surina.racehacker.voice.ActionRegistry;
 import xyz.surina.racehacker.voice.VocabularyLevel;
@@ -61,6 +66,9 @@ public class SettingsFragment extends Fragment {
     private TextView thresholdStatusText;
     private Button thresholdSaveButton;
     private Button thresholdResetButton;
+    private Switch networkBroadcastSwitch;
+    private Button findNearbyDevicesButton;
+    private TextView networkStatusText;
 
     private BluetoothAdapter bluetoothAdapter;
     private List<BluetoothDevice> deviceList = new ArrayList<>();
@@ -93,6 +101,9 @@ public class SettingsFragment extends Fragment {
         thresholdStatusText = view.findViewById(R.id.threshold_status_text);
         thresholdSaveButton = view.findViewById(R.id.threshold_save_button);
         thresholdResetButton = view.findViewById(R.id.threshold_reset_button);
+        networkBroadcastSwitch = view.findViewById(R.id.network_broadcast_switch);
+        findNearbyDevicesButton = view.findViewById(R.id.find_nearby_devices_button);
+        networkStatusText = view.findViewById(R.id.network_status_text);
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -105,9 +116,89 @@ public class SettingsFragment extends Fragment {
         setupAceSpeechControls();
         setupDataLoggingSwitch();
         setupThresholdEditor();
+        setupNetworkRelay();
         updateConnectionStatus();
 
         return view;
+    }
+
+    // ─── Network gauge relay ──────────────────────────────────────────────────
+    // One device broadcasts its live gauge data over the local WiFi network,
+    // another mirrors it — see xyz.surina.racehacker.network and
+    // MainActivity's NetworkMode. This screen owns the picker UI;
+    // MainActivity owns the actual server/client lifecycle.
+
+    private void setupNetworkRelay() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null) return;
+
+        networkBroadcastSwitch.setChecked(main.getNetworkMode() == MainActivity.NetworkMode.BROADCASTING);
+        networkBroadcastSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                main.startBroadcasting();
+                Toast.makeText(getContext(), "Broadcasting gauge data on the network", Toast.LENGTH_SHORT).show();
+            } else {
+                main.stopBroadcasting();
+            }
+            updateNetworkStatus();
+        });
+
+        findNearbyDevicesButton.setOnClickListener(v -> findNearbyDevices());
+        updateNetworkStatus();
+    }
+
+    private void findNearbyDevices() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || getContext() == null) return;
+
+        List<NsdServiceInfo> found = new ArrayList<>();
+        Toast.makeText(getContext(), "Scanning for nearby devices...", Toast.LENGTH_SHORT).show();
+
+        main.findNearbyDevices(devices -> {
+            found.clear();
+            found.addAll(devices);
+        });
+
+        // A live-updating picker needs a persistent discovery session; a fixed
+        // scan window keeps this simple and matches how Bluetooth scanning
+        // already works elsewhere on this screen (one tap, one result set).
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            main.stopFindingNearbyDevices();
+            if (getContext() == null) return;
+
+            if (found.isEmpty()) {
+                Toast.makeText(getContext(), "No RaceHacker devices found on this network", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String[] names = new String[found.size()];
+            for (int i = 0; i < found.size(); i++) names[i] = found.get(i).getServiceName();
+
+            new AlertDialog.Builder(getContext())
+                    .setTitle("Nearby Devices")
+                    .setItems(names, (dialog, which) -> {
+                        main.connectToMirror(found.get(which));
+                        updateNetworkStatus();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }, 4000);
+    }
+
+    private void updateNetworkStatus() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || networkStatusText == null) return;
+
+        switch (main.getNetworkMode()) {
+            case BROADCASTING:
+                networkStatusText.setText("Broadcasting this device's gauge data");
+                break;
+            case MIRRORING:
+                networkStatusText.setText("Mirroring gauge data from another device");
+                break;
+            default:
+                networkStatusText.setText("Not broadcasting, not mirroring");
+        }
     }
 
     // ─── Alarm thresholds ────────────────────────────────────────────────────
