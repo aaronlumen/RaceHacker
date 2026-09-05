@@ -199,6 +199,84 @@ Same concepts, normalized for motorcycle ECUs:
 | Throttle actual | Actual throttle |
 | Lean/rich lambda | Combustion |
 
+## Professional scan-tool feature backlog (gathered from user research)
+
+A much larger feature list gathered from comparing against professional
+scan-tool products (the OBD Fusion / Torque Pro / dealer-tool tier, not just
+Torque). Splitting it by what's actually missing vs. what already has an
+engine but no UI — checked directly against `:carhackerkit`'s source before
+writing this, rather than assuming:
+
+### Already has a real engine, just no UI for it yet
+
+`com.carhacker.kit.ui.MainActivity` today is a single scrolling log view with
+about a dozen buttons (connect, enumerate PIDs, brute-force PIDs, read/clear
+DTCs, get vehicle info, run security scan, export/clear log) — everything
+comes back as text in the log, not a real screen per capability. But the
+engine underneath already implements a surprising amount of this list:
+
+- **Raw CAN monitor** — `CANProtocol.kt` already parses/generates frames,
+  analyzes traffic per arbitration ID, finds patterns, prepares replay,
+  generates fuzz payloads, brute-forces arbitration IDs, encodes/decodes
+  ISO-TP, and computes per-ID message timing. What's missing is entirely UI:
+  a live timestamp/ID/DLC/data table, byte highlighting, bit visualization,
+  CAN ID filtering, and persistent CAN logging as a first-class screen
+  instead of log-view text.
+- **UDS / manufacturer diagnostics** — `SecurityTester.kt` already discovers
+  ECUs, enumerates UDS services, and tests seed-key auth (default keys, seed
+  predictability, brute-force resistance, session timeout). What's missing:
+  presenting this as a module tree (ECM/TCM/ABS/etc, see below) instead of a
+  security-audit report.
+- **Full OBD-II Mode 01-0A support, DTCs, VIN/ECU/calibration ID, protocol
+  detection** — `OBDProtocol.kt` already does PID enumeration, PID
+  brute-forcing, manufacturer-mode discovery, VIN, ECU name, calibration ID,
+  DTC read/clear, and raw command passthrough. Missing: pending vs. permanent
+  DTC distinction, freeze-frame data, readiness monitors, and MIL status as
+  their own exposed fields rather than folded into the general DTC path.
+- **Protocol intelligence (ISO 15765-4/CAN, ISO 9141, KWP2000, J1850, UDS)**
+  — the protocol layer already exists; what's missing is *displaying* which
+  protocol is active and its characteristics, plus DoIP/CAN FD/J1939 support,
+  none of which exist yet at any layer.
+
+### Genuinely new — no engine or UI yet
+
+- **Multi-PID live dashboards + custom gauge designer** — `:app`'s
+  `GaugeData`/`GaugeAdapter` pattern (see [FEATURE_IDEAS.md](FEATURE_IDEAS.md))
+  is the right foundation, but user-driven "pick any available PID, get a
+  gauge for it" requires the PID auto-discovery work already flagged in
+  [SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md#primary-vs-secondary-gauges-ui)
+  as a prerequisite.
+- **Graph multiple PIDs simultaneously, high-speed/configurable sampling,
+  min/max/average/peak tracking, freeze-frame capture** — extends the
+  historical-graphing work (see FEATURE_IDEAS.md) from "one gauge over time"
+  to "several at once, on demand, at a chosen rate."
+- **PID math / calculated PIDs, custom formulas** — this is
+  FEATURE_IDEAS.md's "user-definable custom PIDs/formulas," already flagged
+  there as "the single biggest idea here."
+- **GPS + OBD correlation, 0-60/0-100/quarter-mile/rolling acceleration,
+  horsepower/torque estimation, fuel economy calculations** — all extensions
+  of FEATURE_IDEAS.md's "GPS logging + map view" and "performance testing"
+  items, needing real speed+time+load data validated against real hardware
+  before any HP/torque estimate could be trusted.
+- **Automatic ECU identification + module tree** (Vehicle → ECM/TCM/ABS/
+  SRS/BCM/HVAC/instrument cluster/EPS/TPMS/Gateway/ADAS/battery
+  management/body electronics, each showing manufacturer/hardware
+  ID/software ID/calibration ID/protocol) with a **"Module → DTCs → live
+  data → tests → service functions" browsing model** — this is the real
+  differentiator in the list and doesn't exist in any form today; it's a UI
+  and data-model project on top of the UDS ECU-discovery `SecurityTester.kt`
+  already has, not a from-scratch protocol effort.
+- **DBC import, custom CAN signal definitions, transmit/receive monitoring
+  as a dedicated view, controlled-environment CAN replay as a UI feature**
+  (vs. `CANProtocol.kt`'s existing `prepareReplay()` being callable but
+  unexposed) — new UI and file-format work on top of the existing frame
+  engine.
+
+None of this is built as part of this pass — recorded here, in the doc meant
+for exactly this kind of long-term platform thinking, so it survives to when
+there's bandwidth (and real hardware to validate against) rather than being
+attempted piecemeal without prioritization.
+
 ## Why this isn't being built tonight
 
 This is a genuinely large platform — a real schema, a relationship-inference

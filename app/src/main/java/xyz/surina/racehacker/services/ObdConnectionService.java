@@ -33,6 +33,12 @@ public class ObdConnectionService {
     // (PID 010B) can be exposed as its own gauge without a second query.
     private float lastMapKpa;
 
+    // Stashed by queryAfr() — it already queries STFT (0106) and LTFT (0107)
+    // bank 1 to derive its AFR estimate, so expose those same reads as their
+    // own gauges/narration input instead of querying them a second time.
+    private float lastStftPct;
+    private float lastLtftPct;
+
     // ─── Listener interfaces ────────────────────────────────────────────────
 
     public interface ConnectionListener {
@@ -47,7 +53,8 @@ public class ObdConnectionService {
                           float intakeTempF, float throttlePct,
                           float boostPsi, float batteryV,
                           float timingDeg, float fuelLevelPct, float afr,
-                          float mapKpa, float mafGps);
+                          float mapKpa, float mafGps,
+                          float stftPct, float ltftPct, float o2Volts);
     }
 
     // ─── Constructor ────────────────────────────────────────────────────────
@@ -273,12 +280,16 @@ public class ObdConnectionService {
                     float afr        = queryAfr();
                     float mapKpa     = lastMapKpa; // set by queryBoostPsi() above
                     float mafGps     = queryMaf();
+                    float stftPct    = lastStftPct; // set by queryAfr() above
+                    float ltftPct    = lastLtftPct; // set by queryAfr() above
+                    float o2Volts    = queryO2Sensor1();
 
                     if (dataListener != null) {
                         mainHandler.post(() -> dataListener.onSensorData(
                                 rpm, speedMph, coolantF, intakeF,
                                 throttle, boostPsi, battery, timing,
-                                fuelLevel, afr, mapKpa, mafGps));
+                                fuelLevel, afr, mapKpa, mafGps,
+                                stftPct, ltftPct, o2Volts));
                     }
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
@@ -441,9 +452,24 @@ public class ObdConnectionService {
         try {
             float stft = (parseByte1(sendAndReceive("0106"), "06") / 128f - 1f) * 100f;
             float ltft = (parseByte1(sendAndReceive("0107"), "07") / 128f - 1f) * 100f;
+            lastStftPct = stft;
+            lastLtftPct = ltft;
             float lambda = 1f + (stft + ltft) / 100f;
             return lambda * 14.7f;
         } catch (Exception e) { return 14.7f; }
+    }
+
+    /**
+     * Upstream O2 sensor, bank 1 sensor 1: PID 0114 → A/200 volts.
+     * (Byte B is that sensor's own short-term trim, only meaningful on
+     * vehicles that report per-sensor trim here — global STFT/LTFT above
+     * already covers that, so B is unused.)
+     */
+    private float queryO2Sensor1() {
+        try {
+            String r = sendAndReceive("0114");
+            return parseByteAB(r, "14", (a, b) -> a / 200f);
+        } catch (Exception e) { return 0; }
     }
 
     // ─── Response parsers ────────────────────────────────────────────────────

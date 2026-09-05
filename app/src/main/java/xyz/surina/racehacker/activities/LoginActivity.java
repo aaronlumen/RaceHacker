@@ -45,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
     // through the shorter WELCOME_GREETINGS below instead.
     private static final String FIRST_LAUNCH_GREETING =
             "Welcome to Race Hacking — your all-in-one toolkit for taking on the competition. "
-            + "Clearing engine codes, O-B-D-2 diagnostics, E-C-U programming, stage one through "
+            + "Clearing engine codes, O-B-D-2 diagnostics, E.C.U. programming, stage one through "
             + "stage four tuning — we've got you covered. And hey, the other guys charge an arm "
             + "and a leg for this. If we're saving you some money, toss a few bucks our way — "
             + "it keeps this thing running faster and longer than they ever will.";
@@ -56,7 +56,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final String[] WELCOME_GREETINGS = {
             // 1. S3 — Race Mode
             "Welcome to S3 — Surina 3. This isn't just another OBD scanner. S3 puts advanced "
-                    + "ECU diagnostics, live telemetry, tuning analysis, sensor intelligence, and "
+                    + "E.C.U. diagnostics, live telemetry, tuning analysis, sensor intelligence, and "
                     + "vehicle learning tools in your hands. From street cars to race builds, "
                     + "diesel torque monsters to high-performance motorcycles — S3 helps you "
                     + "understand what your machine is actually doing. Connect. Analyze. Learn. "
@@ -64,14 +64,14 @@ public class LoginActivity extends AppCompatActivity {
             // 2. S3 — The Machine Learns
             "S3 online. Your vehicle has thousands of signals running through its electronic "
                     + "systems. S3 turns those signals into knowledge. Monitor sensors in real "
-                    + "time. Map ECU behavior. Compare commanded versus actual values. Discover "
+                    + "time. Map E.C.U. behavior. Compare commanded versus actual values. Discover "
                     + "patterns. Learn how your engine, transmission, fuel, boost, ignition, and "
                     + "emissions systems work together. Whether you're building a daily driver, "
                     + "a diesel powerhouse, or a track weapon — S3 gives you the tools to learn "
                     + "what your vehicle is telling you. Surina 3. Data in. Performance out.",
             // 3. S3 — Full Send
-            "Ignition on. ECU connected. Welcome to S3. Live data. Advanced diagnostics. "
-                    + "Performance telemetry. ECU analysis. Sensor correlation. Vehicle learning. "
+            "Ignition on. E.C.U. connected. Welcome to S3. Live data. Advanced diagnostics. "
+                    + "Performance telemetry. E.C.U. analysis. Sensor correlation. Vehicle learning. "
                     + "From Harley baggers to superbikes. From turbo imports to German "
                     + "performance machines. From Cummins and Power Stroke diesels to full race "
                     + "builds. S3 doesn't just show you numbers. It teaches you what the numbers "
@@ -82,12 +82,12 @@ public class LoginActivity extends AppCompatActivity {
                     + "temperature, timing value, fuel correction, throttle movement, and sensor "
                     + "response adds another piece to the puzzle. S3 gives you an advanced "
                     + "environment for exploring that data — with live monitoring, diagnostics, "
-                    + "performance analysis, ECU learning, and cross-system correlation. Start "
+                    + "performance analysis, E.C.U. learning, and cross-system correlation. Start "
                     + "with a sensor. Follow the data. Understand the system. Then build smarter. "
                     + "S3 — Surina 3. Where vehicle data becomes knowledge.",
             // 5. S3 — Cinematic / Premium
             "This is S3. Not just a scanner. Not just a code reader. A complete vehicle "
-                    + "intelligence platform. Real-time ECU data. Advanced diagnostics. "
+                    + "intelligence platform. Real-time E.C.U. data. Advanced diagnostics. "
                     + "Performance monitoring. Sensor analytics. Tuning education. System "
                     + "correlation. And tools designed to help you understand virtually every "
                     + "signal your vehicle makes available. Cars. Trucks. Diesels. Motorcycles. "

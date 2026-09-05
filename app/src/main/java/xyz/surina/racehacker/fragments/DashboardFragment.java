@@ -6,6 +6,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,11 +55,38 @@ public class DashboardFragment extends Fragment implements SensorEventListener {
     private long lastGForceUpdateMs;
     private static final long G_FORCE_UPDATE_INTERVAL_MS = 150;
 
+    // AMOLED burn-in reduction — FEATURE_IDEAS.md: "shift the dashboard display
+    // slightly over time, for long dash-mounted sessions." A car dashboard is
+    // exactly the always-on, same-image-for-hours case AMOLED burn-in comes
+    // from, so this nudges the whole screen a few dp in a slow rotation rather
+    // than leaving identical pixels lit in the identical spot indefinitely.
+    private View rootView;
+    private Handler pixelShiftHandler;
+    private int pixelShiftStep = 0;
+    private static final long PIXEL_SHIFT_INTERVAL_MS = 60_000; // once a minute
+    private static final float PIXEL_SHIFT_MAX_DP = 6f; // small enough to be imperceptible while driving
+    private final Runnable pixelShiftRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (rootView != null && getContext() != null) {
+                float maxPx = PIXEL_SHIFT_MAX_DP * getResources().getDisplayMetrics().density;
+                // Cycle through the four corners of a small square so the
+                // shift never drifts off in one direction over a long drive.
+                pixelShiftStep = (pixelShiftStep + 1) % 4;
+                float dx = (pixelShiftStep == 0 || pixelShiftStep == 3) ? -maxPx : maxPx;
+                float dy = (pixelShiftStep < 2) ? -maxPx : maxPx;
+                rootView.animate().translationX(dx).translationY(dy).setDuration(2000).start();
+            }
+            if (pixelShiftHandler != null) pixelShiftHandler.postDelayed(this, PIXEL_SHIFT_INTERVAL_MS);
+        }
+    };
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
+        rootView = view;
 
         statusText      = view.findViewById(R.id.status_text);
         vehicleNameText = view.findViewById(R.id.vehicle_name_text);
@@ -96,6 +125,9 @@ public class DashboardFragment extends Fragment implements SensorEventListener {
         }
         updateVehicleInfo();
         updateShiftLights();
+
+        if (pixelShiftHandler == null) pixelShiftHandler = new Handler(Looper.getMainLooper());
+        pixelShiftHandler.postDelayed(pixelShiftRunnable, PIXEL_SHIFT_INTERVAL_MS);
     }
 
     @Override
@@ -107,6 +139,11 @@ public class DashboardFragment extends Fragment implements SensorEventListener {
         }
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
+        }
+        if (pixelShiftHandler != null) pixelShiftHandler.removeCallbacks(pixelShiftRunnable);
+        if (rootView != null) {
+            rootView.setTranslationX(0);
+            rootView.setTranslationY(0);
         }
     }
 

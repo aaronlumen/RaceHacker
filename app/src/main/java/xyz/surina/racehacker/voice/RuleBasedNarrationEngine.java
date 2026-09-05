@@ -82,9 +82,28 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
     private static final float COLD_ENGINE_THRESHOLD_F = 120f;
     private static final float AGGRESSIVE_THROTTLE_PCT = 60f;
 
+    // Persistent fuel trim: SENSOR_DIAGNOSTICS.md calls this out by name as
+    // needing "the persistent, not momentary, rule from day one" — a single
+    // poll reading combined STFT+LTFT out of range is normal and common
+    // during a throttle transient, not a real signal on its own.
+    private static final float FUEL_TRIM_WARNING_PCT = 10f;
+    private static final float FUEL_TRIM_CRITICAL_PCT = 20f;
+    private static final long FUEL_TRIM_SUSTAIN_MS = 30_000; // 30s of continuous out-of-range before narrating
+
+    // Stuck/lazy O2 sensor: a healthy narrowband sensor swings across a wide
+    // range as the ECU's closed loop hunts around stoichiometric — a voltage
+    // that just sits still for a long stretch (once warmed up) is the tell,
+    // not any particular absolute value (see SENSOR_DIAGNOSTICS.md: "don't
+    // interpret a fixed voltage without knowing sensor type").
+    private static final float O2_SWITCH_DELTA_V = 0.08f;
+    private static final long O2_STUCK_DURATION_MS = 30_000;
+
     private final Map<GaugeData.GaugeType, HistoryPoint> history = new HashMap<>();
     private Long engineStartedAtMs;
     private boolean notifiedOperatingTempThisSession;
+    private Long fuelTrimOutOfRangeSinceMs;
+    private Float o2LastSeenVoltage;
+    private Long o2LastChangeMs;
 
     @Override
     public String narrate(List<GaugeData> gauges, VocabularyLevel level) {
@@ -137,6 +156,12 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
 
         Verdict reachedTemp = checkReachedOperatingTemp(gauges, basic, engineRunning);
         if (reachedTemp != null) return reachedTemp.message;
+
+        Verdict fuelTrim = checkPersistentFuelTrim(gauges, basic, engineRunning, now);
+        if (fuelTrim != null) return fuelTrim.message;
+
+        Verdict stuckO2 = checkStuckO2Sensor(gauges, basic, engineRunning, now);
+        if (stuckO2 != null) return stuckO2.message;
 
         return null;
     }
@@ -245,6 +270,66 @@ public class RuleBasedNarrationEngine implements NarrationEngine {
                     : "Coolant's reached normal operating temperature.");
         }
         return null;
+    }
+
+    // ─── Fuel trim (persistent, not momentary) ──────────────────────────────
+
+    private Verdict checkPersistentFuelTrim(List<GaugeData> gauges, boolean basic, boolean engineRunning, long now) {
+        GaugeData stft = find(gauges, GaugeData.GaugeType.STFT);
+        GaugeData ltft = find(gauges, GaugeData.GaugeType.LTFT);
+        if (!engineRunning || stft == null || !stft.hasData() || ltft == null || !ltft.hasData()) {
+            fuelTrimOutOfRangeSinceMs = null;
+            return null;
+        }
+
+        float combined = stft.getCurrentValue() + ltft.getCurrentValue();
+        if (Math.abs(combined) < FUEL_TRIM_WARNING_PCT) {
+            fuelTrimOutOfRangeSinceMs = null; // back in range resets the debounce, per design principles
+            return null;
+        }
+        if (fuelTrimOutOfRangeSinceMs == null) {
+            fuelTrimOutOfRangeSinceMs = now; // just went out of range — could still be a momentary blip
+            return null;
+        }
+        if (now - fuelTrimOutOfRangeSinceMs < FUEL_TRIM_SUSTAIN_MS) return null;
+
+        boolean critical = Math.abs(combined) >= FUEL_TRIM_CRITICAL_PCT;
+        // Positive combined trim = ECU is adding fuel (running lean on its own,
+        // e.g. a vacuum/unmetered-air leak); negative = removing fuel (running
+        // rich, e.g. excess fuel delivery).
+        boolean addingFuel = combined > 0;
+        return new Verdict(critical, basic
+                ? (addingFuel
+                        ? "Your engine's computer has been adding extra fuel for a while now — that can point to a small air leak somewhere."
+                        : "Your engine's computer has been cutting back fuel for a while now — that can mean it's getting more fuel than it should.")
+                : "Fuel trim's been " + (addingFuel ? "+" : "") + Math.round(combined) + "% for a while now — "
+                        + (addingFuel ? "possible vacuum/unmetered-air leak." : "possible excess fuel delivery."));
+    }
+
+    // ─── Upstream O2 sensor (stuck/lazy detection) ──────────────────────────
+
+    private Verdict checkStuckO2Sensor(List<GaugeData> gauges, boolean basic, boolean engineRunning, long now) {
+        GaugeData o2 = find(gauges, GaugeData.GaugeType.O2_SENSOR);
+        GaugeData coolant = find(gauges, GaugeData.GaugeType.COOLANT_TEMP);
+        boolean warmedUp = coolant != null && coolant.hasData() && coolant.getCurrentValue() >= OPERATING_TEMP_F;
+
+        if (!engineRunning || !warmedUp || o2 == null || !o2.hasData()) {
+            o2LastSeenVoltage = null;
+            o2LastChangeMs = null;
+            return null;
+        }
+
+        float v = o2.getCurrentValue();
+        if (o2LastSeenVoltage == null || Math.abs(v - o2LastSeenVoltage) >= O2_SWITCH_DELTA_V) {
+            o2LastSeenVoltage = v;
+            o2LastChangeMs = now;
+            return null;
+        }
+        if (now - o2LastChangeMs < O2_STUCK_DURATION_MS) return null;
+
+        return new Verdict(false, basic
+                ? "Your oxygen sensor reading hasn't moved in a while — it might be getting lazy or stuck."
+                : "O2 sensor voltage's been flat for a while now — possible lazy/stuck sensor.");
     }
 
     // ─── Battery (real-world thresholds, not GaugeData's generic ones) ──────
