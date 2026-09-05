@@ -34,6 +34,8 @@ import java.util.Set;
 import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.activities.MainActivity;
 import xyz.surina.racehacker.adapters.BluetoothDeviceAdapter;
+import xyz.surina.racehacker.models.GaugeData;
+import xyz.surina.racehacker.models.GaugeThresholdPrefs;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
 import xyz.surina.racehacker.voice.ActionRegistry;
 import xyz.surina.racehacker.voice.VocabularyLevel;
@@ -53,6 +55,12 @@ public class SettingsFragment extends Fragment {
     private Button aceTestSpeechButton;
     private Switch dataLoggingSwitch;
     private TextView dataLoggingStatusText;
+    private Spinner thresholdGaugeSpinner;
+    private EditText thresholdWarningInput;
+    private EditText thresholdCriticalInput;
+    private TextView thresholdStatusText;
+    private Button thresholdSaveButton;
+    private Button thresholdResetButton;
 
     private BluetoothAdapter bluetoothAdapter;
     private List<BluetoothDevice> deviceList = new ArrayList<>();
@@ -79,6 +87,12 @@ public class SettingsFragment extends Fragment {
         aceTestSpeechButton = view.findViewById(R.id.ace_test_speech_button);
         dataLoggingSwitch = view.findViewById(R.id.data_logging_switch);
         dataLoggingStatusText = view.findViewById(R.id.data_logging_status_text);
+        thresholdGaugeSpinner = view.findViewById(R.id.threshold_gauge_spinner);
+        thresholdWarningInput = view.findViewById(R.id.threshold_warning_input);
+        thresholdCriticalInput = view.findViewById(R.id.threshold_critical_input);
+        thresholdStatusText = view.findViewById(R.id.threshold_status_text);
+        thresholdSaveButton = view.findViewById(R.id.threshold_save_button);
+        thresholdResetButton = view.findViewById(R.id.threshold_reset_button);
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -90,9 +104,85 @@ public class SettingsFragment extends Fragment {
         setupAceVocabularySwitch();
         setupAceSpeechControls();
         setupDataLoggingSwitch();
+        setupThresholdEditor();
         updateConnectionStatus();
 
         return view;
+    }
+
+    // ─── Alarm thresholds ────────────────────────────────────────────────────
+    // FEATURE_IDEAS.md: "User-configurable alarm thresholds — GaugeData.
+    // setDefaultRanges() is hardcoded; Torque exposes warning/critical
+    // thresholds as user-editable." One editor for whichever gauge is picked
+    // from the spinner, rather than a row per gauge — the live gauge list
+    // already has 17 entries and most people will only ever want to fix one
+    // or two that don't fit their car.
+
+    private void setupThresholdEditor() {
+        MainActivity main = (MainActivity) getActivity();
+        if (main == null || thresholdGaugeSpinner == null) return;
+        List<GaugeData> gauges = main.getLiveGauges();
+
+        List<String> names = new ArrayList<>();
+        for (GaugeData g : gauges) names.add(g.getName());
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_spinner_item, names);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        thresholdGaugeSpinner.setAdapter(adapter);
+
+        thresholdGaugeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position >= 0 && position < gauges.size()) populateThresholdFields(gauges.get(position));
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+        if (!gauges.isEmpty()) populateThresholdFields(gauges.get(0));
+
+        thresholdSaveButton.setOnClickListener(v -> {
+            int pos = thresholdGaugeSpinner.getSelectedItemPosition();
+            if (pos < 0 || pos >= gauges.size() || getContext() == null) return;
+            GaugeData gauge = gauges.get(pos);
+            try {
+                float warning = Float.parseFloat(thresholdWarningInput.getText().toString());
+                float critical = Float.parseFloat(thresholdCriticalInput.getText().toString());
+                gauge.setWarningThreshold(warning);
+                gauge.setCriticalThreshold(critical);
+                GaugeThresholdPrefs.setOverride(getContext(), gauge.getType(), warning, critical);
+                populateThresholdFields(gauge);
+                Toast.makeText(getContext(), "Saved threshold for " + gauge.getName(), Toast.LENGTH_SHORT).show();
+            } catch (NumberFormatException e) {
+                Toast.makeText(getContext(), "Enter valid numbers for both thresholds", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        thresholdResetButton.setOnClickListener(v -> {
+            int pos = thresholdGaugeSpinner.getSelectedItemPosition();
+            if (pos < 0 || pos >= gauges.size() || getContext() == null) return;
+            GaugeData gauge = gauges.get(pos);
+            GaugeThresholdPrefs.clearOverride(getContext(), gauge.getType());
+            // GaugeData has no "reset to default" of its own — build a scratch
+            // instance of the same type just to read its built-in numbers back.
+            GaugeData defaults = new GaugeData(gauge.getName(), gauge.getUnit(), gauge.getType());
+            gauge.setWarningThreshold(defaults.getWarningThreshold());
+            gauge.setCriticalThreshold(defaults.getCriticalThreshold());
+            populateThresholdFields(gauge);
+            Toast.makeText(getContext(), "Reset " + gauge.getName() + " to default", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void populateThresholdFields(GaugeData gauge) {
+        if (thresholdWarningInput == null || getContext() == null) return;
+        thresholdWarningInput.setText(formatThreshold(gauge.getWarningThreshold()));
+        thresholdCriticalInput.setText(formatThreshold(gauge.getCriticalThreshold()));
+        boolean custom = GaugeThresholdPrefs.hasOverride(getContext(), gauge.getType());
+        thresholdStatusText.setText(custom ? "Custom override active" : "Using built-in default");
+    }
+
+    /** Avoids "6500.0" for whole-number thresholds while keeping decimals for e.g. AFR's 11.5. */
+    private String formatThreshold(float v) {
+        return (v == Math.round(v)) ? String.valueOf(Math.round(v)) : String.valueOf(v);
     }
 
     private void setupAceSpeechControls() {

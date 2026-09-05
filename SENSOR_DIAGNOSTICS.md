@@ -83,10 +83,10 @@ over-reacting**:
 | MAF — Mass Air Flow | g/s, changes with RPM/load | Should rise smoothly with throttle/RPM | Erratic or disproportionately low readings can indicate intake/MAF problems | 🔶 (read via PID 0110, shown as its own gauge; no narration rule yet) |
 | MAP — Manifold Absolute Pressure | kPa/inHg, response to throttle | At idle, substantially below atmospheric on a naturally aspirated engine; should respond quickly to throttle | — | 🔶 (read via PID 010B, shown as its own gauge — same raw reading the Boost gauge already derived from; no narration rule yet) |
 | APP — Accelerator Pedal Position | % and correlation with throttle | Should track commanded throttle smoothly | — | 🔲 |
-| O2 Sensor — upstream | Voltage or equivalence ratio | Narrowband sensors switch rapidly once warm | Don't interpret a fixed voltage without knowing sensor type | 🔲 |
+| O2 Sensor — upstream | Voltage or equivalence ratio | Narrowband sensors switch rapidly once warm | Don't interpret a fixed voltage without knowing sensor type | ✅ (read via PID 0114, bank1/sensor1 voltage; narrated via a stuck/lazy-sensor check — 30s+ of no meaningful voltage change once warmed up) |
 | O2 Sensor — downstream | Voltage/trend | Mainly for catalytic-converter monitoring | A downstream signal closely mimicking upstream can indicate catalyst efficiency problems | 🔲 |
-| STFT — Short-Term Fuel Trim | % | Immediate ECU fuel correction | Persistent large values matter more than momentary fluctuations | 🔲 |
-| LTFT — Long-Term Fuel Trim | % | Long-term correction | Persistent large positive values suggest unmetered air/fuel-delivery issues; large negative values suggest excessive fueling | 🔲 |
+| STFT — Short-Term Fuel Trim | % | Immediate ECU fuel correction | Persistent large values matter more than momentary fluctuations | ✅ (read via PID 0106, bank 1 — was already being queried internally for the AFR estimate; now also its own gauge + narration input) |
+| LTFT — Long-Term Fuel Trim | % | Long-term correction | Persistent large positive values suggest unmetered air/fuel-delivery issues; large negative values suggest excessive fueling | ✅ (read via PID 0107, bank 1 — same as STFT above. Narration checks combined STFT+LTFT sustained ≥30s past ±10%, per the persistent-not-momentary rule this table calls for) |
 | Engine Load | % | — | Useful alongside MAF/MAP, fuel trims, and timing | 🔲 |
 | Knock Retard / Ignition Retard | Degrees of retard | — | Repeated significant retard under similar conditions matters; PID availability varies a lot by vehicle | 🔲 |
 | Fuel Rail Pressure | Pressure and stability | — | Compare against manufacturer-expected pressure, especially during acceleration | 🔲 |
@@ -161,11 +161,18 @@ validate PID parsing against:
    read and shown as gauges (`ObdConnectionService.queryMaf()`, and MAP reuses
    the same PID 010B read the Boost gauge already made). Not yet validated
    against real hardware.
-2. **STFT/LTFT** — standard PIDs (`0x06`–`0x09`), genuinely diagnostic
+2. ~~**STFT/LTFT** — standard PIDs (`0x06`–`0x09`), genuinely diagnostic
    (persistent large trim values are a real "something's wrong" signal), but
-   needs the "persistent, not momentary" rule from day one.
-3. **Upstream O2 / commanded equivalence ratio** — more valuable paired with
-   AFR, which is already implemented.
+   needs the "persistent, not momentary" rule from day one.~~ **Done** — bank 1
+   only (`0x06`/`0x07`); both were already being queried internally for the AFR
+   estimate, now also exposed as gauges, with a 30-second sustained-value rule
+   before narrating. Not yet validated against real hardware.
+3. ~~**Upstream O2 / commanded equivalence ratio** — more valuable paired with
+   AFR, which is already implemented.~~ **Done** — bank1/sensor1 voltage
+   (`0x14`); narrated via a stuck/lazy-sensor check (voltage not moving for 30s+
+   once warmed up) rather than any absolute-value threshold. Commanded
+   equivalence ratio itself still not implemented. Not yet validated against
+   real hardware.
 4. Everything else (knock retard, EGR, VVT, transmission temp) — lower
    priority; PID availability varies a lot by vehicle, so these need
    per-vehicle-profile awareness before they're reliable.

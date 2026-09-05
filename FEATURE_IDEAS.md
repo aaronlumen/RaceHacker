@@ -21,18 +21,31 @@ been built vs. still just an idea.
   #1: standard Mode 01 PIDs, read and displayed, no narration rule yet.
 - **Remove-adapter reminder** — a toast on app exit if the OBD adapter is
   still connected, so it doesn't get left plugged in draining the battery.
+- **STFT/LTFT gauges + persistent-trim narration** — bank 1 short/long-term
+  fuel trim, `SENSOR_DIAGNOSTICS.md` suggested build order #2. Both were
+  already being queried internally to derive the AFR estimate; now also
+  exposed as their own gauges, with a 30-second sustained-value rule before
+  narrating (a single out-of-range poll is normal, not a signal).
+- **Upstream O2 sensor gauge + stuck-sensor narration** — bank1/sensor1
+  voltage (PID 0114), build order #3. Narrated via "hasn't moved in 30s+ once
+  warmed up" rather than any absolute-voltage threshold, since a fixed O2
+  voltage isn't inherently meaningful without knowing sensor type.
+- **AMOLED burn-in reduction** — the Dashboard now nudges itself a few dp in
+  a slow four-corner rotation once a minute.
+- **User-configurable alarm thresholds** — Settings → Alarm Thresholds:
+  pick any gauge, set your own warning/critical numbers, persisted across
+  restarts (`GaugeThresholdPrefs`). Global per-type overrides, not yet
+  per-`VehicleProfile` — see the vehicle-aware-thresholds gap in
+  [SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md).
+- **Historical graphing** — new History tab, MPAndroidChart line chart of any
+  one gauge's last 5 minutes (`GaugeHistoryStore`, in-memory, resets on
+  restart — `DataLogger`'s CSV export is still the durable record).
 
 ## Not built — next up, roughly in priority order
 
 - **Units toggle (imperial/metric)** — currently hardcoded (MPH, °F, PSI)
   throughout `MainActivity.setupLiveGauges()` and `GaugeData`. Real effort:
   touches every gauge's display/formatting, not just a single setting.
-- **User-configurable alarm thresholds** — `GaugeData.setDefaultRanges()` is
-  hardcoded; Torque exposes warning/critical thresholds as user-editable.
-  Pairs naturally with the vehicle-aware-thresholds gap already flagged in
-  [SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md).
-- **Historical graphing** — MPAndroidChart is already a dependency (used for
-  gauges) but nothing plots sensor history over time yet, just current value.
 - **Performance testing** — 0-60, quarter mile, braking distance. Needs
   speed+time tracking and a dedicated screen; a real scope, not a quick add.
 - **GPS logging + map view** — location-tagged log rows and a route map.

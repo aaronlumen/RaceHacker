@@ -28,6 +28,8 @@ import xyz.surina.racehacker.R;
 import xyz.surina.racehacker.auth.AuthManager;
 import xyz.surina.racehacker.fragments.*;
 import xyz.surina.racehacker.models.GaugeData;
+import xyz.surina.racehacker.models.GaugeHistoryStore;
+import xyz.surina.racehacker.models.GaugeThresholdPrefs;
 import xyz.surina.racehacker.utils.DataLogger;
 import xyz.surina.racehacker.vehicles.VehicleProfile;
 import xyz.surina.racehacker.services.ObdConnectionService;
@@ -53,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int IDX_BATTERY   = 11;
     private static final int IDX_MAP       = 12;
     private static final int IDX_MAF       = 13;
+    private static final int IDX_STFT      = 14;
+    private static final int IDX_LTFT      = 15;
+    private static final int IDX_O2        = 16;
 
     private BottomNavigationView bottomNav;
     private VehicleProfile currentVehicleProfile;
@@ -64,6 +69,11 @@ public class MainActivity extends AppCompatActivity {
     // about it from any screen.
     private final List<GaugeData> liveGauges = new ArrayList<>();
     private Runnable gaugeUpdateListener;
+
+    // Rolling history feeding the History tab's chart — see GaugeHistoryStore.
+    // Owned here for the same "keeps updating regardless of active tab" reason
+    // as liveGauges.
+    private final GaugeHistoryStore gaugeHistory = new GaugeHistoryStore();
 
     // Owned here for the same reason as liveGauges — logging shouldn't stop
     // just because the user switched off the Dashboard tab. Was previously
@@ -138,6 +148,8 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new EcuFlashFragment();
             } else if (itemId == R.id.nav_tuning) {
                 selectedFragment = new TuningFragment();
+            } else if (itemId == R.id.nav_history) {
+                selectedFragment = new HistoryFragment();
             } else if (itemId == R.id.nav_settings) {
                 selectedFragment = new SettingsFragment();
             }
@@ -216,12 +228,24 @@ public class MainActivity extends AppCompatActivity {
         // logic needed yet.
         liveGauges.add(new GaugeData("Manifold Press", "kPa", GaugeData.GaugeType.MAP));
         liveGauges.add(new GaugeData("Air Flow",        "g/s", GaugeData.GaugeType.MAF));
-        for (GaugeData g : liveGauges) g.setCurrentValue(Float.NaN);
+        // STFT/LTFT + upstream O2 — SENSOR_DIAGNOSTICS.md's suggested build
+        // order #2/#3. STFT/LTFT were already being queried internally to
+        // derive the AFR estimate above; this just exposes those same reads.
+        liveGauges.add(new GaugeData("Short Trim",  "%", GaugeData.GaugeType.STFT));
+        liveGauges.add(new GaugeData("Long Trim",   "%", GaugeData.GaugeType.LTFT));
+        liveGauges.add(new GaugeData("O2 Sensor",   "V", GaugeData.GaugeType.O2_SENSOR));
+        for (GaugeData g : liveGauges) {
+            // Apply any user-saved threshold override (Settings → Alarm
+            // Thresholds) on top of the built-in default from setDefaultRanges().
+            GaugeThresholdPrefs.applyOverride(this, g);
+            g.setCurrentValue(Float.NaN);
+        }
 
         obdService.setDataListener((rpm, speedMph, coolantF, intakeF,
                                      throttle, boostPsi, battery,
                                      timing, fuelLevel, afr,
-                                     mapKpa, mafGps) -> {
+                                     mapKpa, mafGps,
+                                     stftPct, ltftPct, o2Volts) -> {
             liveGauges.get(IDX_RPM).setCurrentValue(rpm);
             liveGauges.get(IDX_SPEED).setCurrentValue(speedMph);
             liveGauges.get(IDX_BOOST).setCurrentValue(boostPsi);
@@ -237,11 +261,15 @@ public class MainActivity extends AppCompatActivity {
             liveGauges.get(IDX_FUEL_PRES).setCurrentValue(fuelLevel);
             liveGauges.get(IDX_MAP).setCurrentValue(mapKpa);
             liveGauges.get(IDX_MAF).setCurrentValue(mafGps);
+            liveGauges.get(IDX_STFT).setCurrentValue(stftPct);
+            liveGauges.get(IDX_LTFT).setCurrentValue(ltftPct);
+            liveGauges.get(IDX_O2).setCurrentValue(o2Volts);
 
-            if (dataLogger != null && dataLogger.isLogging()) {
-                for (GaugeData g : liveGauges) {
-                    if (g.hasData()) dataLogger.logData(g);
-                }
+            long now = System.currentTimeMillis();
+            for (GaugeData g : liveGauges) {
+                if (!g.hasData()) continue;
+                if (dataLogger != null && dataLogger.isLogging()) dataLogger.logData(g);
+                gaugeHistory.record(g.getType(), g.getCurrentValue(), now);
             }
 
             if (gaugeUpdateListener != null) gaugeUpdateListener.run();
@@ -253,6 +281,10 @@ public class MainActivity extends AppCompatActivity {
 
     public List<GaugeData> getLiveGauges() {
         return liveGauges;
+    }
+
+    public GaugeHistoryStore getGaugeHistory() {
+        return gaugeHistory;
     }
 
     /** Only DashboardFragment (the currently-visible screen, if any) should set this. */
@@ -292,12 +324,15 @@ public class MainActivity extends AppCompatActivity {
         actionRegistry.registerGlobal("Opening Diagnostics.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_diagnostics),
                 "diagnostics", "diagnostic screen", "codes screen");
-        actionRegistry.registerGlobal("Opening E C U Flash.",
+        actionRegistry.registerGlobal("Opening E.C.U. Flash.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_ecu_flash),
                 "ecu flash", "flash screen", "flashing screen");
         actionRegistry.registerGlobal("Opening Tuning.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_tuning),
                 "tuning", "tune screen");
+        actionRegistry.registerGlobal("Opening History.",
+                () -> bottomNav.setSelectedItemId(R.id.nav_history),
+                "history", "history screen", "graphs", "charts");
         actionRegistry.registerGlobal("Opening Settings.",
                 () -> bottomNav.setSelectedItemId(R.id.nav_settings),
                 "settings", "connection screen");

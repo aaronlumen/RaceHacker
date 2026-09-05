@@ -26,7 +26,10 @@ public class GaugeData {
         BATTERY_VOLTAGE,
         FUEL_LEVEL,
         MAF,
-        MAP
+        MAP,
+        STFT,
+        LTFT,
+        O2_SENSOR
     }
 
     public GaugeData(String name, String unit, GaugeType type) {
@@ -143,10 +146,42 @@ public class GaugeData {
                 this.warningThreshold = 250;
                 this.criticalThreshold = 280;
                 break;
+            case STFT:
+            case LTFT:
+                // Fuel trim, %. SENSOR_DIAGNOSTICS.md: "sustained combined
+                // STFT/LTFT around ±10-15% deserves investigation; substantially
+                // beyond that is more suspicious" — can run positive (adding
+                // fuel, e.g. unmetered air/vacuum leak) or negative (removing
+                // fuel, e.g. excessive fueling), so both directions matter.
+                // isWarning()/isCritical() below check magnitude, not sign.
+                // The real "is this a problem" call is RuleBasedNarrationEngine's
+                // persistent-trim check (a momentary spike here is normal), but
+                // these thresholds still drive the gauge card's own color.
+                this.minValue = -100;
+                this.maxValue = 100;
+                this.warningThreshold = 10;
+                this.criticalThreshold = 20;
+                break;
+            case O2_SENSOR:
+                // Upstream O2 sensor voltage, 0-1V typical for a narrowband
+                // sensor. There's no "high value = bad" here — per
+                // SENSOR_DIAGNOSTICS.md, "don't interpret a fixed voltage
+                // without knowing sensor type." What actually matters is
+                // whether it's switching at all (RuleBasedNarrationEngine's
+                // stuck-sensor check), so these bounds just keep the gauge
+                // card from ever falsely flashing warning/critical.
+                this.minValue = 0;
+                this.maxValue = 1.1f;
+                this.warningThreshold = 1.2f;
+                this.criticalThreshold = 1.3f;
+                break;
         }
     }
 
     public boolean isWarning() {
+        if (type == GaugeType.STFT || type == GaugeType.LTFT) {
+            return Math.abs(currentValue) >= warningThreshold;
+        }
         if (type == GaugeType.OIL_PRESSURE || type == GaugeType.FUEL_PRESSURE ||
             type == GaugeType.BATTERY_VOLTAGE || type == GaugeType.FUEL_LEVEL) {
             return currentValue <= warningThreshold;
@@ -155,6 +190,9 @@ public class GaugeData {
     }
 
     public boolean isCritical() {
+        if (type == GaugeType.STFT || type == GaugeType.LTFT) {
+            return Math.abs(currentValue) >= criticalThreshold;
+        }
         if (type == GaugeType.OIL_PRESSURE || type == GaugeType.FUEL_PRESSURE ||
             type == GaugeType.BATTERY_VOLTAGE || type == GaugeType.FUEL_LEVEL) {
             return currentValue <= criticalThreshold;
