@@ -1,30 +1,36 @@
-# Session Handoff — 2026-09-05 (updated same day, after v1.0.1)
+# Session Handoff — 2026-09-05 (updated twice now — after v1.0.1, then after the network relay feature)
 
 Written so a fresh Claude session (after this conversation is cleared) can pick up
 exactly where this one left off, without re-deriving any of this from git log archaeology.
-Read this first, then the docs it points to. This doc has been updated once already
-today — the "updated" note above means don't trust a cached/older copy of this file.
+Read this first, then the docs it points to. This doc has been updated more than once
+today — trust only the version on `main`, never a cached/older copy.
 
 ## Repo state right now
 
-`main` is up to date with everything below merged in (`git log --oneline -25`). No open
+`main` is up to date with everything below merged in (`git log --oneline -30`). No open
 PRs, no uncommitted work, nothing stashed. **Signed release `v1.0.1` is live**
-(https://github.com/aaronlumen/RaceHacker/releases/tag/v1.0.1) — this supersedes the
-"immediate next step: cut v1.0.1" that used to be here; that's done. README.md now also
-documents the full manual build/release process (keystore setup, build/verify/publish
-commands) so cutting the *next* release doesn't require re-deriving these steps.
+(https://github.com/aaronlumen/RaceHacker/releases/tag/v1.0.1). README.md documents the
+full manual build/release process (keystore setup, build/verify/publish commands).
 
-**The only thing actually still open from this session is the Bluetooth connect-failure
-investigation** — see its own section below, unchanged in status: still waiting on the
-user to reproduce with logcat watching, or run the Torque HCI-snoop comparison.
+**Two things are now open, both needing the user's actual hardware to move forward —
+see their own sections below:**
+1. The Bluetooth OBD connect-failure investigation (older, still unresolved)
+2. Verifying the just-built network gauge relay end-to-end (new — needs two devices)
 
-Physical test device: Pixel 6, serial `19191FDF60058J`, connected via USB. Standing rule
-for this device, self-imposed after an earlier incident this session where a blind
-tap/text-input almost sent something unintended: **on-device verification is read-only
-only** — `adb exec-out screencap`, `adb logcat`, `adb shell pidof`/`am start` on exported
-activities only. Never tap, swipe, or type on the device programmatically. This has real
-consequences (see "Known gap in verification" below) — don't relax it without the user
-explicitly saying so in the moment.
+**User context, worth knowing**: the user is in the middle of migrating from an old
+phone to a new Pixel 11, and specifically asked for a network relay feature so one
+phone can stay in the car (Bluetooth range is short) while another device — a second
+phone, or a laptop with VS Code — mirrors its live gauge data over WiFi. That feature is
+now built (see below); testing it needs the user's actual two-device setup once the
+Pixel 11 migration settles.
+
+Physical test device used for all `adb` work this session: Pixel 6, serial
+`19191FDF60058J`, connected via USB. Standing rule for this device, self-imposed after
+an earlier incident this session where a blind tap/text-input almost sent something
+unintended: **on-device verification is read-only only** — `adb exec-out screencap`,
+`adb logcat`, `adb shell pidof`/`am start` on exported activities only. Never tap, swipe,
+or type on the device programmatically. This has real consequences (see "Known gap in
+verification" below) — don't relax it without the user explicitly saying so in the moment.
 
 ## What shipped this session, in order
 
@@ -59,6 +65,17 @@ explicitly saying so in the moment.
     `a46f9d2f...`), so it updates cleanly over an existing install
 11. **README: manual build/release commands documented** (PR #14) — keystore generation,
     build/verify/publish steps, and the download-badge asset-naming dependency
+12. **`SESSION_HANDOFF.md` updated** (PR #15) after v1.0.1 shipped
+13. **Network gauge relay** (PR #16) — new `xyz.surina.racehacker.network` package:
+    `NetworkDiscoveryManager` (wraps Android's built-in NsdManager/mDNS, no manual IP
+    entry), `GaugeBroadcastServer` (in-car device broadcasts live gauges as JSON over a
+    WebSocket — new dependency `org.java-websocket:Java-WebSocket:1.5.6`),
+    `GaugeMirrorClient` (a second device mirrors it). Deliberately plain JSON-over-
+    WebSocket, not a custom protocol, so an external tool (VS Code, a script, a browser)
+    can read the feed directly with zero app-specific client — this was the whole point
+    of the user's ask. Settings gets a broadcast toggle + "Find Nearby Devices" picker.
+    Compiled/installed/launched clean; **genuinely not tested end-to-end** (needs two
+    real devices on the same WiFi — see its own section below)
 
 ## Known gap in verification — read this before trusting "compiles and installs"
 
@@ -111,6 +128,35 @@ adb logcat capture attempt:
   genuinely new/unpaired devices. Not this user's actual blocker (their adapter already
   shows up), but worth fixing anyway for anyone whose adapter isn't pre-paired — real
   discovery via a `BroadcastReceiver` on `BluetoothDevice.ACTION_FOUND`.
+
+## Open thread: network gauge relay needs real end-to-end testing
+
+Built this session (step 13 above), never run against real hardware — only compiled,
+installed, and launched without crashing on a single device. What's genuinely unverified:
+
+- **Discovery**: does `NetworkDiscoveryManager`'s NSD registration/browsing actually find
+  a second device on the user's real WiFi network? Some routers/networks block mDNS
+  (client isolation on guest networks, some mesh systems) — home WiFi or a phone's own
+  hotspot should be fine, but this is unverified.
+- **The broadcast→mirror round trip**: does a gauge value set on the broadcaster's
+  `liveGauges` actually arrive correctly on the mirror's screen? JSON (de)serialization
+  of `GaugeData` (including the `Float.NaN` "no data yet" case, handled via
+  `serializeSpecialFloatingPointValues()`) has only been reasoned about, not observed.
+  Reusing existing `GaugeData` for both directions.
+- **Reconnect/error behavior**: what happens if the broadcaster app closes, or WiFi
+  drops, while a mirror is connected? `GaugeMirrorClient`'s `onClose`/`onError` just log
+  and toast today — no automatic reconnect attempt.
+
+**How to actually test this**: needs two devices on the same WiFi (the user's old phone
++ new Pixel 11, or the Pixel 6 + Pixel 11, once the phone migration settles) — one taps
+the Settings → Network broadcast toggle, the other taps "Find Nearby Devices." Per the
+read-only-verification rule above, this is not something this session's own adb access
+can drive (needs taps on two separate physical devices) — genuinely needs the user to
+run it and report what happened.
+
+**External-tool verification is easier and worth doing first**: once one device is
+broadcasting, connecting from a laptop with `websocat ws://<device-ip>:8420` (README has
+this documented) tests the server/JSON side without needing a second phone at all.
 
 ## The idea backlog — where to look for "what's next"
 
