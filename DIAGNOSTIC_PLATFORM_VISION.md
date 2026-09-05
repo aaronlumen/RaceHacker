@@ -277,6 +277,73 @@ for exactly this kind of long-term platform thinking, so it survives to when
 there's bandwidth (and real hardware to validate against) rather than being
 attempted piecemeal without prioritization.
 
+## Response learning: build local knowledge now, sync it later
+
+Right now, every PID enumeration and CAN discovery pass starts from zero and
+throws its findings away the moment the app disconnects or restarts. That's
+real, useful data being discarded:
+
+- `OBDProtocol.enumerateSupportedPIDs()`/`bruteForcePIDs()`/
+  `discoverManufacturerModes()` already populate `discoveredPIDs` and
+  `ecuAddresses` — in-memory only, gone on disconnect.
+- `CANProtocol.analyzeTraffic()`, `findPatterns()`, and
+  `identifySecurityCritical()` already turn raw CAN traffic into structured
+  findings (which arbitration IDs exist, how they behave, which look
+  security-critical) — same in-memory-only fate.
+- `SecurityTester.discoverECUs()`/`enumerateServices()` already produce a
+  list of ECUs and UDS services a vehicle actually responds to.
+
+None of this survives past the session it was learned in, so the app
+re-discovers the same vehicle's supported PIDs/ECUs/CAN IDs from scratch
+every single time it connects.
+
+### Phase 1 — local persistence (buildable now, no server needed)
+
+Key this by vehicle identity — `OBDProtocol.getVIN()`/`getCalibrationID()`
+already exist to identify *which* vehicle a given discovery pass belongs to
+— and persist discovered PIDs/ECU addresses/CAN arbitration IDs/UDS services
+locally (Room, since `:carhackerkit` already depends on it, rather than a new
+storage mechanism). Two direct wins even before any server exists:
+
+- Reconnecting to the same car gets progressively smarter instead of
+  re-running full brute-force/discovery every time — known-supported PIDs
+  can be queried directly, unknown ranges narrowed.
+- This is the real data source for the "PID auto-discovery" and "secondary
+  diagnostics screen" ideas already in [SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md)
+  and the module-tree idea in the professional-scan-tool backlog above —
+  those need exactly this kind of "what does this specific vehicle actually
+  support" knowledge to only show gauges/modules that are real.
+
+### Phase 2 — feed it back to a webserver (future release)
+
+Once local learning is solid, sync it outward so it becomes a crowd-sourced
+"what do real vehicles actually support" database — the same shape of
+problem `ProfileSyncService` already solves for vehicle profiles (primary
+endpoint `https://race.surina.xyz/api/v1/profile`, with
+`https://race.e164.cloud/api/v1/profile` as fallback). A `/api/v1/pid-
+knowledge`-style endpoint on the same service is the natural extension:
+upload what was learned about a vehicle, pull down what's already known
+about vehicles like it. This directly feeds the `Vehicle → Engine → ECU →
+PID → ...` schema above with real observed data instead of hand-maintained
+tables, and starts closing the vehicle-aware-thresholds gap
+[SENSOR_DIAGNOSTICS.md](SENSOR_DIAGNOSTICS.md) flags — real per-vehicle
+normal ranges, not just per-vehicle-*class* guesses.
+
+Not building the sync client itself yet — there's no server endpoint to
+point it at. Worth settling before that phase starts, though:
+
+- **Consent** — this must be opt-in, never a silent upload of someone's
+  vehicle diagnostic data.
+- **Anonymization** — upload should be keyed by make/model/year/calibration
+  ID, not VIN, so learned knowledge is shareable without being
+  individually identifying.
+- **Conflict resolution** — different users' cars nominally "the same"
+  vehicle can genuinely support different PID sets (options, model years,
+  running changes); the schema needs to represent "commonly supported" vs.
+  "supported on some units," not silently overwrite one report with another.
+- **Versioning by calibration ID** — ECU firmware differs even within one
+  model year, so knowledge needs to be scoped tighter than "2018 F-150."
+
 ## Why this isn't being built tonight
 
 This is a genuinely large platform — a real schema, a relationship-inference
