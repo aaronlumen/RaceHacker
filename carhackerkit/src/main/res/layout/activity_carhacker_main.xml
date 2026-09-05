@@ -245,6 +245,16 @@
                     android:textSize="10sp"
                     android:textAllCaps="false"
                     style="@style/Widget.RaceHacker.ToolkitPrimaryButton" />
+
+                <Button
+                    android:id="@+id/btnViewKnowledge"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_columnWeight="1"
+                    android:text="View Knowledge"
+                    android:textSize="10sp"
+                    android:textAllCaps="false"
+                    style="@style/Widget.RaceHacker.ToolkitOutlinedButton" />
             </GridLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.carhacker.kit.R
 import com.carhacker.kit.databinding.ActivityCarhackerMainBinding
 import com.carhacker.kit.can.CANProtocol
+import com.carhacker.kit.knowledge.PidKnowledgeStore
 import com.carhacker.kit.obd.*
 import com.carhacker.kit.security.SecurityTester
 import com.carhacker.kit.security.TestProgress
@@ -30,8 +31,14 @@ class MainActivity : AppCompatActivity() {
     private var obdProtocol: OBDProtocol? = null
     private var canProtocol: CANProtocol? = null
     private var securityTester: SecurityTester? = null
-    
+
     private val logAdapter = LogAdapter()
+
+    // Response learning — see DIAGNOSTIC_PLATFORM_VISION.md. Persists what
+    // enumeration/brute-force/security-scan passes discover so it survives
+    // past this session instead of being thrown away on disconnect.
+    private val knowledgeStore by lazy { PidKnowledgeStore(this) }
+    private var currentVehicleKey: String = "unknown"
     
     companion object {
         private const val PERMISSION_REQUEST_CODE = 100
@@ -72,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnClearDtcs.setOnClickListener { clearDTCs() }
         binding.btnGetVehicleInfo.setOnClickListener { getVehicleInfo() }
         binding.btnSecurityScan.setOnClickListener { runSecurityScan() }
+        binding.btnViewKnowledge.setOnClickListener { viewKnowledge() }
         binding.btnExportLog.setOnClickListener { exportLog() }
         binding.btnClearLog.setOnClickListener { clearLog() }
         
@@ -344,7 +352,7 @@ class MainActivity : AppCompatActivity() {
                     val info = PIDDefinitions.MODE_01_PIDS[pid]
                     log("  PID 0x${pid.toString(16).padStart(2, '0')}: ${info?.name ?: "Unknown"}")
                 }
-                
+
                 // Mode 09 - Vehicle Info
                 log("\nMode 09 (Vehicle Info):")
                 val mode09 = protocol.enumerateSupportedPIDs(0x09)
@@ -352,7 +360,11 @@ class MainActivity : AppCompatActivity() {
                     val info = PIDDefinitions.MODE_09_PIDS[pid]
                     log("  PID 0x${pid.toString(16).padStart(2, '0')}: ${info?.name ?: "Unknown"}")
                 }
-                
+
+                knowledgeStore.recordPids(currentVehicleKey, 0x01, mode01)
+                knowledgeStore.recordPids(currentVehicleKey, 0x09, mode09)
+                log("💾 Saved to local knowledge base for $currentVehicleKey")
+
                 log("═══════════════════════════════════")
             }
         }
@@ -373,7 +385,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 
+                knowledgeStore.recordPids(currentVehicleKey, 0x01, found)
+
                 log("\nBrute force complete. Found ${found.size} responding PIDs.")
+                log("💾 Saved to local knowledge base for $currentVehicleKey")
                 log("═══════════════════════════════════")
             }
         }
@@ -428,15 +443,22 @@ class MainActivity : AppCompatActivity() {
             log("═══ Vehicle Information ═══")
             
             obdProtocol?.let { protocol ->
-                val vin = protocol.getVIN()
-                log("VIN: ${vin.getOrNull() ?: "N/A"}")
-                
-                val ecuName = protocol.getECUName()
-                log("ECU Name: ${ecuName.getOrNull() ?: "N/A"}")
-                
-                val calId = protocol.getCalibrationID()
-                log("Calibration ID: ${calId.getOrNull() ?: "N/A"}")
-                
+                val vin = protocol.getVIN().getOrNull()
+                log("VIN: ${vin ?: "N/A"}")
+
+                val ecuName = protocol.getECUName().getOrNull()
+                log("ECU Name: ${ecuName ?: "N/A"}")
+
+                val calId = protocol.getCalibrationID().getOrNull()
+                log("Calibration ID: ${calId ?: "N/A"}")
+
+                // A real VIN becomes this vehicle's identity for the rest of the
+                // session — everything recorded before this point used "unknown"
+                // and stays there; nothing retroactively re-keys.
+                if (!vin.isNullOrBlank()) currentVehicleKey = vin
+                knowledgeStore.recordVehicleIdentity(currentVehicleKey, vin, ecuName, calId)
+                log("💾 Saved to local knowledge base for $currentVehicleKey")
+
                 log("═══════════════════════════════════")
             }
         }
@@ -469,10 +491,35 @@ class MainActivity : AppCompatActivity() {
             report?.let {
                 log("\n${it.summary}")
                 log("\nFull report generated with ${it.findings.size} findings.")
+
+                knowledgeStore.recordEcus(currentVehicleKey, it.ecuInfo)
+                knowledgeStore.recordServices(currentVehicleKey, it.services)
+                log("💾 Saved ${it.ecuInfo.size} ECU(s), ${it.services.size} service(s) to local knowledge base for $currentVehicleKey")
             }
         }
     }
     
+    /**
+     * Shows what's been persisted so far for the current vehicle — the
+     * read-side of response learning, so it's visibly doing something rather
+     * than write-only data nobody ever looks at. Also lists every other
+     * vehicle this device has ever recorded knowledge for, since a shared
+     * tablet or shop device will see more than one car over time.
+     */
+    private fun viewKnowledge() {
+        lifecycleScope.launch {
+            log("═══ Local Knowledge Base ═══")
+            log(knowledgeStore.summarize(currentVehicleKey))
+
+            val allKeys = knowledgeStore.allKnownVehicleKeys()
+            val others = allKeys.filter { it != currentVehicleKey }
+            if (others.isNotEmpty()) {
+                log("Also have knowledge for: ${others.joinToString()}")
+            }
+            log("═══════════════════════════════════")
+        }
+    }
+
     private fun exportLog() {
         val log = logAdapter.getFullLog()
         
